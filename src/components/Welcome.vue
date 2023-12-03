@@ -14,7 +14,7 @@
 </template>
   
 <script lang="ts" setup>
-import { onMounted, ref, h } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { exec } from 'child_process'
 
