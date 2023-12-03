@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import "./style.css"
+import 'element-plus/theme-chalk/src/message.scss'
 import App from './App.vue'
-import './samples/node-api'
 
 createApp(App)
   .mount('#app')
