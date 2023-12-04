@@ -64,12 +64,10 @@ const connectADB = () => {
         ElMessage.closeAll()
         if (error) {
             ElMessage.error(error.message)
-            console.error(`Error connecting to ADB: ${error.message}`)
             return
         }
         if (stderr) {
             ElMessage.error(stderr)
-            console.error(`ADB stderr: ${stderr}`)
             return
         }
         if (stdout.includes("connected to")) {
@@ -77,11 +75,10 @@ const connectADB = () => {
                 message: '模拟器连接成功。',
                 type: 'success',
             })
-            adbStore.connect()
+            adbStore.status = 1
         } else {
             ElMessage.error('模拟器连接失败。')
         }
-        console.log(`ADB stdout: ${stdout}`)
     })
 }
 

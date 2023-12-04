@@ -5,7 +5,8 @@
         <Header></Header>
       </el-header>
       <el-main>
-        <Welcome></Welcome>
+        <Welcome v-if="menuStore.menuIndex === '1'" />
+        <Blacksmith v-else-if="menuStore.menuIndex === '2'" />
       </el-main>
       <el-footer class="toolbox-footer">
         <Footer></Footer>
@@ -18,6 +19,10 @@
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
 import Welcome from './components/Welcome.vue'
+import Blacksmith from './components/Blacksmith.vue'
+import { useMenuStore } from './store/menu'
+
+const menuStore = useMenuStore()
 </script>
 
 <style>
