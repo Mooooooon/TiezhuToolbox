@@ -17,6 +17,7 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { exec } from 'child_process'
+import path from 'path'
 
 interface NameItem {
     value: string
@@ -56,22 +57,23 @@ const handleSelect = (item: NameItem) => {
 const connectADB = () => {
     // Execute ADB command to connect
     ElMessage('模拟器连接中……')
-    exec('adb connect 127.0.0.1:' + state.value, (error, stdout, stderr) => {
+    const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
+    exec(adbPath + ' connect 127.0.0.1:' + state.value, (error, stdout, stderr) => {
         if (error) {
             ElMessage.error(error.message)
-            console.error(`Error connecting to ADB: ${error.message}`);
-            return;
+            console.error(`Error connecting to ADB: ${error.message}`)
+            return
         }
         if (stderr) {
             ElMessage.error(stderr)
-            console.error(`ADB stderr: ${stderr}`);
-            return;
+            console.error(`ADB stderr: ${stderr}`)
+            return
         }
         ElMessage({
             message: '模拟器连接成功。',
             type: 'success',
         })
-        console.log(`ADB stdout: ${stdout}`);
+        console.log(`ADB stdout: ${stdout}`)
     });
 }
 onMounted(() => {
