@@ -23,6 +23,7 @@ release
 *.njsproj
 *.sln
 *.sw?
+.prettierrc
 
 # lockfile
 package-lock.json
