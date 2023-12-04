@@ -61,6 +61,7 @@ const connectADB = () => {
     ElMessage('模拟器连接中……')
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
     exec(adbPath + ' connect 127.0.0.1:' + state.value, (error, stdout, stderr) => {
+        ElMessage.closeAll()
         if (error) {
             ElMessage.error(error.message)
             console.error(`Error connecting to ADB: ${error.message}`)
@@ -72,7 +73,6 @@ const connectADB = () => {
             return
         }
         if (stdout.includes("connected to")) {
-            ElMessage.closeAll()
             ElMessage({
                 message: '模拟器连接成功。',
                 type: 'success',
@@ -82,7 +82,7 @@ const connectADB = () => {
             ElMessage.error('模拟器连接失败。')
         }
         console.log(`ADB stdout: ${stdout}`)
-    });
+    })
 }
 
 onMounted(() => {
