@@ -1,9 +1,9 @@
 {
-  "name": "electron-vue-vite",
-  "version": "2.0.0",
+  "name": "tiezhu-toolbox",
+  "version": "1.0.0",
   "main": "dist-electron/main/index.js",
-  "description": "Really simple Electron + Vue + Vite boilerplate.",
-  "author": "草鞋没号 <308487730@qq.com>",
+  "description": "你的E7助手!",
+  "author": "李铁柱",
   "license": "MIT",
   "private": true,
   "keywords": [
@@ -42,6 +42,7 @@
     "vue-tsc": "^1.8.8"
   },
   "dependencies": {
-    "element-plus": "^2.4.3"
+    "element-plus": "^2.4.3",
+    "pinia": "^2.1.7"
   }
 }

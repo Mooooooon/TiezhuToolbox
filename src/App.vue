@@ -1,9 +1,3 @@
-<script setup lang="ts">
-import Header from './components/Header.vue'
-import Footer from './components/Footer.vue'
-import Welcome from './components/Welcome.vue'
-</script>
-
 <template>
   <div class="common-layout" style="height: 100%;">
     <el-container style="height: 100%;">
@@ -19,6 +13,12 @@ import Welcome from './components/Welcome.vue'
     </el-container>
   </div>
 </template>
+
+<script setup lang="ts">
+import Header from './components/Header.vue'
+import Footer from './components/Footer.vue'
+import Welcome from './components/Welcome.vue'
+</script>
 
 <style>
 .toolbox-footer {

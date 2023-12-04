@@ -17,7 +17,10 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { exec } from 'child_process'
+import { useAdbStore } from '../store/adb'
 import path from 'path'
+
+const adbStore = useAdbStore()
 
 interface NameItem {
     value: string
@@ -55,7 +58,6 @@ const handleSelect = (item: NameItem) => {
 }
 
 const connectADB = () => {
-    // Execute ADB command to connect
     ElMessage('模拟器连接中……')
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
     exec(adbPath + ' connect 127.0.0.1:' + state.value, (error, stdout, stderr) => {
@@ -69,13 +71,20 @@ const connectADB = () => {
             console.error(`ADB stderr: ${stderr}`)
             return
         }
-        ElMessage({
-            message: '模拟器连接成功。',
-            type: 'success',
-        })
+        if (stdout.includes("connected to")) {
+            ElMessage.closeAll()
+            ElMessage({
+                message: '模拟器连接成功。',
+                type: 'success',
+            })
+            adbStore.connect()
+        } else {
+            ElMessage.error('模拟器连接失败。')
+        }
         console.log(`ADB stdout: ${stdout}`)
     });
 }
+
 onMounted(() => {
     names.value = loadAll()
 })
