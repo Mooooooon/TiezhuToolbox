@@ -30,7 +30,7 @@ interface NameItem {
 const state = ref('')
 const names = ref<NameItem[]>([])
 
-const querySearch = (queryString: string, cb: (arg0: { value: string; name: string; }[]) => void) => {
+const querySearch = (queryString: string, cb: (arg0: { value: string; name: string }[]) => void) => {
     const results = queryString
         ? names.value.filter(createFilter(queryString))
         : names.value
@@ -38,7 +38,7 @@ const querySearch = (queryString: string, cb: (arg0: { value: string; name: stri
     cb(results)
 }
 const createFilter = (queryString: string) => {
-    return (restaurant: { value: string; }) => {
+    return (restaurant: { value: string }) => {
         return (
             restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0
         )
