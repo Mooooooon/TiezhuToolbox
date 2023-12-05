@@ -18,27 +18,16 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { exec } from 'child_process'
+import { useAdbStore } from '../store/adb'
 import path from 'path'
 
-const src = ref('screenshot.png')
+const src = ref('screenshot.png?v=' + Math.random().toString(36).substring(7))
+const adbStore = useAdbStore()
+const selectedDeviceId = adbStore.device
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
-    const adbCommand = adbPath + ' shell screencap -p /sdcard/screenshot.png && ' + adbPath + ' pull /sdcard/screenshot.png'
-    exec(adbPath + ' devices', (error, stdout, stderr) => {
-        if (error) {
-            console.error('获取设备列表失败:', error)
-            return
-        }
-        console.log('连接的设备:', stdout)
-        // 分割字符串以获取设备列表
-        const devices = stdout.split('\n')
-            .filter(line => line.includes('device'))
-            .map(line => line.replace('device', '').trim())
-
-        console.log('连接的设备:', devices)
-        // devices 现在是一个包含设备 ID 的数组
-    })
+    const adbCommand = adbPath + ' -s ' + selectedDeviceId + ' shell screencap -p /sdcard/screenshot.png && ' + adbPath + ' -s ' + selectedDeviceId + ' pull /sdcard/screenshot.png'
     exec(adbCommand, (error, stdout, stderr) => {
         if (error) {
             console.error('截图错误:', error)

@@ -11,6 +11,11 @@
     <el-row>
         <el-button @click="connectADB">连接</el-button>
     </el-row>
+    <el-row>
+        <el-select v-model="value" placeholder="选择模拟器" @change="handleChange" class="device-select">
+            <el-option v-for="item in adbStore.deviceList" :value="item.value" />
+        </el-select>
+    </el-row>
 </template>
   
 <script lang="ts" setup>
@@ -21,7 +26,7 @@ import { useAdbStore } from '../store/adb'
 import path from 'path'
 
 const adbStore = useAdbStore()
-
+const value = ref(adbStore.device)
 interface NameItem {
     value: string
     name: string
@@ -56,6 +61,10 @@ const loadAll = () => {
 const handleSelect = (item: NameItem) => {
     console.log(item)
 }
+const handleChange = (newValue: string) => {
+    adbStore.device = newValue
+    console.log('选择的设备已更新:', adbStore.device)
+}
 
 const connectADB = () => {
     ElMessage('模拟器连接中……')
@@ -76,6 +85,25 @@ const connectADB = () => {
                 type: 'success',
             })
             adbStore.status = 1
+            exec(adbPath + ' devices', (error, stdout, stderr) => {
+                if (error) {
+                    console.error('获取设备列表失败:', error)
+                    return
+                }
+                console.log('连接的设备:', stdout)
+                // 分割字符串以获取设备列表
+                let devices = stdout.split('\n')
+                    .filter(line => line.includes('device'))
+                    .map(line => {
+                        const deviceValue = line.replace('device', '').trim()
+                        return { value: deviceValue, name: deviceValue }
+                    })
+                if (devices.length > 0 && devices[0].value === 'List of s attached') {
+                    devices = devices.slice(1) // 移除数组的第一个元素
+                }
+                adbStore.deviceList = devices  // 更新 Pinia store 中的设备列表
+                console.log('更新后的设备:', adbStore.deviceList)
+            })
         } else {
             ElMessage.error('模拟器连接失败。')
         }
@@ -92,7 +120,8 @@ onMounted(() => {
 </script>
   
 <style>
-.port-input {
+.port-input,
+.device-select {
     width: 220px;
 }
 
