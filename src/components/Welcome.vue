@@ -61,6 +61,7 @@ const loadAll = () => {
 }
 const handleSelect = (item: NameItem) => {
     console.log(item)
+    adbStore.port = item.value
 }
 const handleChange = (newValue: string) => {
     adbStore.device = newValue
@@ -118,6 +119,7 @@ const connectADB = () => {
 
 onMounted(() => {
     names.value = loadAll()
+    state.value = adbStore.port
     options.value = adbStore.deviceList
 })
 </script>
