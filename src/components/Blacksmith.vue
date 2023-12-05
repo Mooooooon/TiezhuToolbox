@@ -21,7 +21,7 @@ import path from 'path'
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
-    const adbCommand = ' shell screencap -p /sdcard/screenshot.png && adb pull /sdcard/screenshot.png'
+    const adbCommand = adbPath + ' shell screencap -p /sdcard/screenshot.png && ' + adbPath + ' pull /sdcard/screenshot.png'
     exec(adbPath + ' devices', (error, stdout, stderr) => {
         if (error) {
             console.error('获取设备列表失败:', error)
@@ -29,7 +29,7 @@ const takeScreenshot = () => {
         }
         console.log('连接的设备:', stdout)
     })
-    exec(adbPath + adbCommand, (error, stdout, stderr) => {
+    exec(adbCommand, (error, stdout, stderr) => {
         if (error) {
             console.error('截图错误:', error)
             return
