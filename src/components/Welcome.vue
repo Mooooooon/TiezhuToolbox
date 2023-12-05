@@ -13,7 +13,7 @@
     </el-row>
     <el-row>
         <el-select v-model="value" placeholder="选择模拟器" @change="handleChange" class="device-select">
-            <el-option v-for="item in adbStore.deviceList" :value="item.value" />
+            <el-option v-for="item in options" :value="item.value" />
         </el-select>
     </el-row>
 </template>
@@ -34,6 +34,7 @@ interface NameItem {
 
 const state = ref('')
 const names = ref<NameItem[]>([])
+const options = ref<NameItem[]>([])
 
 const querySearch = (queryString: string, cb: (arg0: { value: string; name: string }[]) => void) => {
     const results = queryString
@@ -101,8 +102,9 @@ const connectADB = () => {
                 if (devices.length > 0 && devices[0].value === 'List of s attached') {
                     devices = devices.slice(1) // 移除数组的第一个元素
                 }
-                adbStore.deviceList = devices  // 更新 Pinia store 中的设备列表
-                console.log('更新后的设备:', adbStore.deviceList)
+                options.value = devices  // 更新 Pinia store 中的设备列表
+                adbStore.deviceList = options.value
+                console.log('更新后的设备:', options.value)
             })
         } else {
             ElMessage.error('模拟器连接失败。')
@@ -116,6 +118,7 @@ const connectADB = () => {
 
 onMounted(() => {
     names.value = loadAll()
+    options.value = adbStore.deviceList
 })
 </script>
   
