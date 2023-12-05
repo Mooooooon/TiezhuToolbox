@@ -24,6 +24,7 @@ release
 *.sln
 *.sw?
 .prettierrc
+screenshot.png
 
 # lockfile
 package-lock.json
