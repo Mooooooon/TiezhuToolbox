@@ -15,16 +15,16 @@ const menuStore = useMenuStore()
 const activeIndex = menuStore.menuIndex
 const handleSelect = (key: string, keyPath: string[]) => {
     menuStore.menuIndex = key
+    const activeElement = document.activeElement as HTMLElement
+    if (activeElement) {
+        activeElement.blur()
+    }
 }
 </script>
   
 <style>
 .flex-grow {
     flex-grow: 1;
-}
-
-.el-menu-item:focus {
-    background-color: Transparent !important;
 }
 </style>
   

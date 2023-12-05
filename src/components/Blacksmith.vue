@@ -31,6 +31,13 @@ const takeScreenshot = () => {
             return
         }
         console.log('连接的设备:', stdout)
+        // 分割字符串以获取设备列表
+        const devices = stdout.split('\n')
+            .filter(line => line.includes('device'))
+            .map(line => line.replace('device', '').trim())
+
+        console.log('连接的设备:', devices)
+        // devices 现在是一个包含设备 ID 的数组
     })
     exec(adbCommand, (error, stdout, stderr) => {
         if (error) {
