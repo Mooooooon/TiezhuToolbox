@@ -80,6 +80,10 @@ const connectADB = () => {
             ElMessage.error('模拟器连接失败。')
         }
     })
+    const activeElement = document.activeElement as HTMLElement
+    if (activeElement) {
+        activeElement.blur()
+    }
 }
 
 onMounted(() => {

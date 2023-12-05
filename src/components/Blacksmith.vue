@@ -44,6 +44,10 @@ const takeScreenshot = () => {
         console.log(stdout)
         src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
     })
+    const activeElement = document.activeElement as HTMLElement
+    if (activeElement) {
+        activeElement.blur()
+    }
 }
 </script>
 
