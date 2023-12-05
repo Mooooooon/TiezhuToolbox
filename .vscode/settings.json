@@ -11,5 +11,8 @@
   },
   "[vue]": {
     "editor.defaultFormatter": "Vue.volar"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
   } // set as "true" to run 'prettier' last not first
 }
