@@ -16,8 +16,11 @@
 </template>
 
 <script lang="ts" setup>
+import { ref } from 'vue'
 import { exec } from 'child_process'
 import path from 'path'
+
+const src = ref('screenshot.png')
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
@@ -34,11 +37,14 @@ const takeScreenshot = () => {
             console.error('截图错误:', error)
             return
         }
+        if (stderr) {
+            console.error('截图错误:', error)
+            return
+        }
         console.log(stdout)
+        src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
     })
 }
-const src =
-    'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
 </script>
 
 <style lang="scss"></style>

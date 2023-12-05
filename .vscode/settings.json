@@ -8,5 +8,8 @@
   "vs-code-prettier-eslint.prettierLast": false,
   "[javascript]": {
     "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "Vue.volar"
   } // set as "true" to run 'prettier' last not first
 }
