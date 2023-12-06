@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "element-plus": "^2.4.3",
-    "pinia": "^2.1.7"
+    "pinia": "^2.1.7",
+    "tesseract.js": "^5.0.3"
   }
 }

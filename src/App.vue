@@ -6,7 +6,14 @@
       </el-header>
       <el-main>
         <Welcome v-if="menuStore.menuIndex === '1'" />
-        <Blacksmith v-else-if="menuStore.menuIndex === '2'" />
+        <Suspense v-else-if="menuStore.menuIndex === '2'">
+          <template #default>
+            <Blacksmith />
+          </template>
+          <template #fallback>
+            <div>加载中...</div>
+          </template>
+        </Suspense>
       </el-main>
       <el-footer class="toolbox-footer">
         <Footer></Footer>

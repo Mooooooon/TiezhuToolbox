@@ -16,14 +16,16 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { exec } from 'child_process'
 import { useAdbStore } from '../store/adb'
+import { createWorker } from 'tesseract.js'
 import path from 'path'
 
 const src = ref('screenshot.png?v=' + Math.random().toString(36).substring(7))
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
+const data = ref()
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
@@ -39,12 +41,33 @@ const takeScreenshot = () => {
         }
         console.log(stdout)
         src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
+        textOcr()
     })
     const activeElement = document.activeElement as HTMLElement
     if (activeElement) {
         activeElement.blur()
     }
 }
+
+const worker = await createWorker('eng')
+const textOcr = () => {
+    (async () => {
+        data.value = await worker.recognize('screenshot.png')
+        console.log(data)
+    })()
+}
+
+// 定义一个销毁 worker 的函数
+const destroyWorker = async () => {
+    if (worker) {
+        await worker.terminate()
+    }
+}
+
+// 使用 onUnmounted 钩子来确保在组件销毁时销毁 worker
+onUnmounted(() => {
+    destroyWorker()
+})
 </script>
 
 <style lang="scss"></style>
