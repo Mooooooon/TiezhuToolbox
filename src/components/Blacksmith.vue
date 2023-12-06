@@ -48,8 +48,10 @@ const takeScreenshot = () => {
         activeElement.blur()
     }
 }
-
-const worker = await createWorker('eng')
+const worker = await createWorker('chi_sim', 1, {
+    langPath: path.join(__dirname, 'lang-data'),
+    logger: m => console.log(m)
+})
 const textOcr = () => {
     (async () => {
         data.value = await worker.recognize('screenshot.png')
