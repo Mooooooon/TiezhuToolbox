@@ -2,6 +2,9 @@
     <el-row>
         <el-col :span="12">
             <el-button @click="takeScreenshot">截图</el-button>
+            <el-descriptions class="gear-info" title="装备信息" column="1">
+                <el-descriptions-item label="主属性">{{ primaryAttribute[0] }} {{ primaryAttribute[1] }}</el-descriptions-item>
+            </el-descriptions>
         </el-col>
         <el-col :span="12">
             <div class="block">
@@ -26,7 +29,7 @@ import sharp from 'sharp'
 const src = ref('screenshot.png?v=' + Math.random().toString(36).substring(7))
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
-const data = ref()
+const primaryAttribute = ref(["", ""])
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
@@ -41,7 +44,7 @@ const takeScreenshot = () => {
             return
         }
         console.log(stdout)
-        await primaryAttribute()
+        await getPrimaryAttribute()
         src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
     })
     const activeElement = document.activeElement as HTMLElement
@@ -55,8 +58,7 @@ const worker = await createWorker('eng+chi_sim', 1, {
 })
 const textOcr = async (imagePath: string) => {
     const { data: { text } } = await worker.recognize(imagePath)
-    const valuesArray = text.split(' ')
-    console.log(valuesArray)
+    return text
 }
 
 // 定义一个销毁 worker 的函数
@@ -71,18 +73,24 @@ onUnmounted(() => {
     destroyWorker()
 })
 
-const primaryAttribute = async () => {
-    const processedImagePath = 'processed_screenshot.png'
+const getPrimaryAttribute = async () => {
+    const processedImagePath = 'primary_attribute.png'
     const cropOptions = { left: 80, top: 270, width: 300, height: 40 }
     await sharp('screenshot.png')
         .resize(1600, 900)
         .extract(cropOptions)
         .toFile(processedImagePath)
-    textOcr('processed_screenshot.png')
-    return processedImagePath
+    const text = await textOcr(processedImagePath)
+    const stringWithoutSpaces = text.replace(/\s+/g, '')
+    primaryAttribute.value = stringWithoutSpaces.split(/(\d+)/).filter(Boolean)
+    console.log(primaryAttribute)
 }
-
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.gear-info {
+    margin-top: 20px;
+    padding-right: 20px;
+}
+</style>
   
