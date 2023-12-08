@@ -2,7 +2,8 @@
     <el-row>
         <el-col :span="12">
             <el-button @click="takeScreenshot">截图</el-button>
-            <el-descriptions class="gear-info" title="装备信息" column="1">
+            <el-descriptions class="gear-info" title="装备信息" :column="1">
+                <el-descriptions-item label="强化等级">+{{ enhancementLevel }}</el-descriptions-item>
                 <el-descriptions-item label="主属性">{{ primaryAttribute[0] }} {{ primaryAttribute[1] }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
@@ -29,6 +30,7 @@ import sharp from 'sharp'
 const src = ref('screenshot.png?v=' + Math.random().toString(36).substring(7))
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
+const enhancementLevel = ref()
 const primaryAttribute = ref(["", ""])
 
 const takeScreenshot = () => {
@@ -45,7 +47,9 @@ const takeScreenshot = () => {
         }
         console.log(stdout)
         await getPrimaryAttribute()
-        src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
+        await getEnhancementLevel()
+        // src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
+        src.value = 'enhancement_level.png?v=' + Math.random().toString(36).substring(7)
     })
     const activeElement = document.activeElement as HTMLElement
     if (activeElement) {
@@ -73,6 +77,23 @@ onUnmounted(() => {
     destroyWorker()
 })
 
+const getEnhancementLevel = async () => {
+    const processedImagePath = 'enhancement_level.png'
+    const cropOptions = { left: 130, top: 105, width: 30, height: 25 }
+    await sharp('screenshot.png')
+        .resize(1600, 900)
+        .extract(cropOptions)
+        .toFile(processedImagePath)
+    const text = await textOcr(processedImagePath)
+    const numbers = text.match(/\d+/g)
+    if (numbers) {
+        var numericValue = parseInt(numbers.join(''))
+        enhancementLevel.value = numericValue
+    } else {
+        enhancementLevel.value = 0
+    }
+}
+
 const getPrimaryAttribute = async () => {
     const processedImagePath = 'primary_attribute.png'
     const cropOptions = { left: 80, top: 270, width: 300, height: 40 }
@@ -82,8 +103,7 @@ const getPrimaryAttribute = async () => {
         .toFile(processedImagePath)
     const text = await textOcr(processedImagePath)
     const stringWithoutSpaces = text.replace(/\s+/g, '')
-    primaryAttribute.value = stringWithoutSpaces.split(/(\d+)/).filter(Boolean)
-    console.log(primaryAttribute)
+    primaryAttribute.value = stringWithoutSpaces.split(/(\d+%?)/).filter(Boolean)
 }
 </script>
 
