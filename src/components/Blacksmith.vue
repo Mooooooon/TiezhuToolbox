@@ -40,7 +40,7 @@ const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
 const enhancementLevel = ref()
 const primaryAttribute = ref(["", ""])
-const attribute = ref([["", ""]])
+const attribute = ref([["", ""], ["", ""], ["", ""], ["", ""]])
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
@@ -66,10 +66,7 @@ const takeScreenshot = () => {
         activeElement.blur()
     }
 }
-const worker = await createWorker('eng+chi_sim', 1, {
-    langPath: path.join(__dirname, 'lang-data'),
-    logger: m => console.log(m)
-})
+const worker = await createWorker('eng+chi_sim')
 const textOcr = async (imagePath: string) => {
     const { data: { text } } = await worker.recognize(imagePath)
     return text
@@ -112,8 +109,9 @@ const getPrimaryAttribute = async () => {
         .extract(cropOptions)
         .toFile(processedImagePath)
     const text = await textOcr(processedImagePath)
-    const stringWithoutSpaces = text.replace(/\s+/g, '')
-    primaryAttribute.value = stringWithoutSpaces.split(/(\d+%?)/).filter(Boolean)
+    const stringWithoutSpacesAndCommas = text.replace(/[\s,]+/g, '')
+    primaryAttribute.value = stringWithoutSpacesAndCommas.split(/(\d+%?)/).filter(Boolean)
+    console.log(stringWithoutSpacesAndCommas)
 }
 
 const getAttribute = async () => {
@@ -133,7 +131,7 @@ const getAttribute = async () => {
         return stringWithoutSpaces.split(/(\d+%?)/).filter(Boolean)
     })
 
-    console.log(processedElements)
+    // console.log(processedElements)
     attribute.value = processedElements
 }
 </script>
