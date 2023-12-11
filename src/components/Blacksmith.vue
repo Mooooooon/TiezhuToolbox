@@ -13,16 +13,28 @@
                 <el-descriptions-item :label="attribute[1][0]">{{ attribute[1][1] }}</el-descriptions-item>
                 <el-descriptions-item :label="attribute[2][0]">{{ attribute[2][1] }}</el-descriptions-item>
                 <el-descriptions-item :label="attribute[3][0]">{{ attribute[3][1] }}</el-descriptions-item>
+                <el-descriptions-item label="分数">{{ score }}</el-descriptions-item>
+                <el-descriptions-item label="预期分数">{{ expectantScore }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
         <el-col :span="12">
-            <div class="block">
-                <el-image :src="src">
-                    <template #placeholder>
-                        <div class="image-slot">Loading<span class="dot">...</span></div>
-                    </template>
-                </el-image>
-            </div>
+            <el-row>
+                <el-col>
+                    <el-image :src="src">
+                        <template #placeholder>
+                            <div class="image-slot">Loading<span class="dot">...</span></div>
+                        </template>
+                    </el-image>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-text class="mx-1" size="large">强化建议：</el-text>
+                </el-col>
+                <el-col :span="18">
+                    <el-text class="mx-1" size="large">{{ enhancedRecommendation }}</el-text>
+                </el-col>
+            </el-row>
         </el-col>
     </el-row>
 </template>
@@ -39,8 +51,12 @@ const src = ref('screenshot.png?v=' + Math.random().toString(36).substring(7))
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
 const enhancementLevel = ref()
+const part = ref('')
 const primaryAttribute = ref(["", ""])
-const attribute = ref([["", ""], ["", ""], ["", ""], ["", ""]])
+const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""]])
+const score = ref(0)
+const enhancedRecommendation = ref('')
+const expectantScore = ref(0)
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
@@ -57,16 +73,22 @@ const takeScreenshot = () => {
         console.log(stdout)
         await getPrimaryAttribute()
         await getEnhancementLevel()
+        await getPart()
         await getAttribute()
-        // src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
-        src.value = 'attribute.png?v=' + Math.random().toString(36).substring(7)
+        score.value = calculateScore(attribute.value)
+        enhancedRecommendation.value = calculateAnalysis()
+        expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
+        src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
     })
     const activeElement = document.activeElement as HTMLElement
     if (activeElement) {
         activeElement.blur()
     }
 }
-const worker = await createWorker('eng+chi_sim')
+const worker = await createWorker('eng+chi_sim', 1, {
+    langPath: path.join(process.cwd(), 'lang-data'),
+    logger: m => console.log(m)
+})
 const textOcr = async (imagePath: string) => {
     const { data: { text } } = await worker.recognize(imagePath)
     return text
@@ -101,6 +123,17 @@ const getEnhancementLevel = async () => {
     }
 }
 
+const getPart = async () => {
+    const processedImagePath = 'part.png'
+    const cropOptions = { left: 216, top: 123, width: 45, height: 26 }
+    await sharp('screenshot.png')
+        .resize(1600, 900)
+        .extract(cropOptions)
+        .toFile(processedImagePath)
+    const text = await textOcr(processedImagePath)
+    part.value = text.replace(/\s/g, "")
+}
+
 const getPrimaryAttribute = async () => {
     const processedImagePath = 'primary_attribute.png'
     const cropOptions = { left: 80, top: 270, width: 300, height: 40 }
@@ -111,7 +144,6 @@ const getPrimaryAttribute = async () => {
     const text = await textOcr(processedImagePath)
     const stringWithoutSpacesAndCommas = text.replace(/[\s,]+/g, '')
     primaryAttribute.value = stringWithoutSpacesAndCommas.split(/(\d+%?)/).filter(Boolean)
-    console.log(stringWithoutSpacesAndCommas)
 }
 
 const getAttribute = async () => {
@@ -125,14 +157,129 @@ const getAttribute = async () => {
     const elements = text.split('\n').filter(function (element) {
         return element.trim() !== ''
     })
-    const processedElements = elements.map(function (element) {
+    const processedElements = elements.map(function (element): [string, string] {
         const stringWithoutSpaces = element.replace(/\s+/g, '')
-
-        return stringWithoutSpaces.split(/(\d+%?)/).filter(Boolean)
+        const parts = stringWithoutSpaces.split(/(\d+%?)/).filter(Boolean)
+        return [parts[0], parts[1]]
     })
 
-    // console.log(processedElements)
     attribute.value = processedElements
+}
+
+const calculateScore = (attribute: [string, string][]): number => {
+    let score = 0
+    for (let [name, value] of attribute) {
+        switch (name) {
+            case "攻击力":
+                if (value.includes("%")) {
+                    score += parseFloat(value.replace('%', '')) * 1
+                } else {
+                    score += parseFloat(value) * 3.46 / 39
+                }
+                break
+            case "防御力":
+                if (value.includes("%")) {
+                    score += parseFloat(value.replace('%', '')) * 1
+                } else {
+                    score += parseFloat(value) * 4.99 / 31
+                }
+                break
+            case "生命值":
+                if (value.includes("%")) {
+                    score += parseFloat(value.replace('%', '')) * 1
+                } else {
+                    score += parseFloat(value) * 3.09 / 174
+                }
+                break
+            case "效果命中":
+            case "效果抗性":
+                score += parseFloat(value.replace('%', '')) * 1
+                break
+            case "速度":
+                score += parseFloat(value) * 2
+                break
+            case "暴击伤害":
+                score += parseFloat(value.replace('%', '')) * 1.125
+                break
+            case "暴击率":
+                score += parseFloat(value.replace('%', '')) * 1.5
+                break
+        }
+    }
+    const roundedScore = parseFloat(score.toFixed(2))
+    return roundedScore
+}
+
+const calculateAnalysis = () => {
+    if (["武器", "铠甲", "头盔"].includes(part.value)) {
+        if (enhancementLevel.value < 3 && score.value >= 22) return "继续强化"
+        else if (enhancementLevel.value < 6 && score.value >= 28) return "继续强化"
+        else if (enhancementLevel.value < 9 && score.value >= 34) return "继续强化"
+        else if (enhancementLevel.value < 12 && score.value >= 40) return "继续强化"
+        else if (enhancementLevel.value < 15 && score.value >= 46) return "继续强化"
+        else if (enhancementLevel.value == 15 && score.value >= 52) return "建议重铸"
+        else return "分数过低，建议放弃"
+    } else {
+        if (["攻击力", "防御力", "生命值"].includes(primaryAttribute.value[0]) && !primaryAttribute.value[1].includes('%')) {
+            return "固定值主属性，建议放弃"
+        }
+        else {
+            if (enhancementLevel.value < 3 && score.value >= 20) return "继续强化"
+            else if (enhancementLevel.value < 6 && score.value >= 26) return "继续强化"
+            else if (enhancementLevel.value < 9 && score.value >= 32) return "继续强化"
+            else if (enhancementLevel.value < 12 && score.value >= 38) return "继续强化"
+            else if (enhancementLevel.value < 15 && score.value >= 44) return "继续强化"
+            else if (enhancementLevel.value == 15 && score.value >= 50) return "建议重铸"
+            else return "分数过低，建议放弃"
+        }
+    }
+}
+
+const expectant = (): number => {
+    let expectant = 0
+    for (let [name, value] of attribute.value) {
+        switch (name) {
+            case "攻击力":
+                if (value.includes("%")) {
+                    expectant += (4 + 8) / 2
+                } else {
+                    expectant += (33 + 46) / 2 / 39
+                }
+                break
+            case "防御力":
+                if (value.includes("%")) {
+                    expectant += (4 + 8) / 2
+                } else {
+                    expectant += (28 + 35) / 2 / 31
+                }
+                break
+            case "生命值":
+                if (value.includes("%")) {
+                    expectant += (4 + 8) / 2
+                } else {
+                    expectant += (157 + 202) / 2 / 174
+                }
+                break
+            case "效果命中":
+            case "效果抗性":
+                expectant += (4 + 8) / 2
+                break
+            case "速度":
+                expectant += (2 + 4) / 2 * 2
+                break
+            case "暴击伤害":
+                if (value.includes("%")) {
+                    expectant += (4 + 7) / 2 * 1.125
+                }
+                break
+            case "暴击率":
+                if (value.includes("%")) {
+                    expectant += (3 + 5) / 2 * 1.5
+                }
+                break
+        }
+    }
+    return expectant / 4 * Math.floor((17 - enhancementLevel.value) / 3)
 }
 </script>
 
