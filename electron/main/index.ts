@@ -119,3 +119,5 @@ ipcMain.handle('open-win', (_, arg) => {
     childWindow.loadFile(indexHtml, { hash: arg })
   }
 })
+
+app.commandLine.appendSwitch('disable-features', 'WidgetLayering')

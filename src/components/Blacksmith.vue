@@ -7,7 +7,7 @@
                     {{ enhancementLevel !== undefined ? '+' + enhancementLevel : '' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="主属性">
-                    {{ primaryAttribute[0] }} {{ primaryAttribute[1] }}
+                    {{ primaryAttribute }}
                 </el-descriptions-item>
                 <el-descriptions-item :label="attribute[0][0]">{{ attribute[0][1] }}</el-descriptions-item>
                 <el-descriptions-item :label="attribute[1][0]">{{ attribute[1][1] }}</el-descriptions-item>
@@ -41,162 +41,113 @@
 
 <script lang="ts" setup>
 import { onUnmounted, ref } from 'vue'
-import { exec } from 'child_process'
+import { exec, spawn } from 'child_process'
 import { useAdbStore } from '../store/adb'
-import { createWorker } from 'tesseract.js'
 import path from 'path'
 import sharp from 'sharp'
 
-const src = ref('screenshot.png?v=' + Math.random().toString(36).substring(7))
+const src = ref('')
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
 const enhancementLevel = ref()
 const part = ref('')
-const primaryAttribute = ref(["", ""])
+const primaryAttribute = ref('')
 const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""]])
 const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
-const activeElement = document.activeElement as HTMLElement
 
+const child = spawn(path.join(process.cwd(), 'PaddleOCR-json', 'PaddleOCR-json.exe'), {
+    cwd: path.join(process.cwd(), 'PaddleOCR-json'),
+    stdio: ['pipe', 'pipe', 'pipe']
+})
+// 从子进程接收数据
+child.stdout.on('data', (data: Buffer) => {
+    let strOut: string = data.toString()
+    // 检测启动成功
+    if (strOut.includes('OCR init completed.')) {
+        console.log('初始化完成！')
+    } else if (strOut.includes('PaddleOCR-json v1.3.0')) {
+        console.log(strOut)
+    } else {
+        try {
+            let jsonOutput = JSON.parse(strOut)
+            if (jsonOutput.code === 100) {
+                const gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
+                console.log(gearInfo)
+            } else {
+                console.log('Code is not 100, original output:', strOut)
+            }
+        } catch (e) {
+            console.error('Error parsing JSON:', e)
+        }
+    }
+})
+// 监听退出事件
+child.on('close', () => {
+    console.log('子进程退出')
+})
+// 因为这个工具的作者把info输出在了stderr，所以不要做错误处理
+// child.stderr.on('data', (data) => {
+//     console.error(`子进程错误输出：${data}`)
+// })
+
+//截图
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
     const adbCommand = adbPath + ' -s ' + selectedDeviceId + ' shell screencap -p /sdcard/screenshot.png && ' + adbPath + ' -s ' + selectedDeviceId + ' pull /sdcard/screenshot.png'
+
     exec(adbCommand, async (error, stdout, stderr) => {
         if (error) {
             console.error('截图错误:', error)
             return
         }
         if (stderr) {
-            console.error('截图错误:', error)
+            console.error('截图错误:', stderr)
             return
         }
-        console.log(stdout)
-        await getPrimaryAttribute()
-        // await getEnhancementLevel()
-        // await getPart()
-        // await getAttribute()
-        // score.value = calculateScore(attribute.value)
-        // enhancedRecommendation.value = calculateAnalysis()
-        // expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
-        src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
+        // 检查 stdout 是否包含 "file pulled" 字符串
+        if (stdout.includes("file pulled")) {
+            await getGearInfo()
+            // score.value = calculateScore(attribute.value);
+            // enhancedRecommendation.value = calculateAnalysis();
+            // expectantScore.value = parseFloat((expectant() + score.value).toFixed(2));
+            // src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
+            src.value = 'gear_info.png?v=' + Math.random().toString(36).substring(7)
+        } else {
+            console.error("截图失败，未能成功拉取文件")
+        }
     })
+    const activeElement = document.activeElement as HTMLElement
     if (activeElement) {
         activeElement.blur()
     }
 }
-// const worker = await createWorker('eng+chi_sim', 1, {
-//     langPath: path.join(process.cwd(), 'lang-data'),
-//     logger: m => console.log(m)
-// })
-const textOcr = async (imagePath: string) => {
-    // const { data: { text } } = await worker.recognize(imagePath)
-    // return text
-    const ocrPath = path.join(process.cwd(), 'PaddleOCR-json', 'PaddleOCR-json.exe')
-    const newImagePath = path.join(process.cwd(), imagePath)
-    const configPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'config_chinese.txt')
-    const detPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'ch_PP-OCRv3_det_infer')
-    const recPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'ch_PP-OCRv3_rec_infer')
-    const dictPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'dict_chinese.txt')
-    const ocrCommand = ocrPath
-        + ' -image_path=' + newImagePath
-        + ' -config_path=' + configPath
-        + ' -det_model_dir=' + detPath
-        + ' -rec_model_dir=' + recPath
-        + ' -rec_char_dict_path=' + dictPath
-    console.log(ocrCommand)
-    exec(ocrCommand, async (error, stdout, stderr) => {
-        if (error) {
-            // console.error('错误:', error)
-        }
-        if (stderr) {
-            // console.error('错误:', error)
-        }
-        // 使用正则表达式匹配JSON格式的字符串
-        const jsonRegex = /{.*}/s
-        const match = stdout.match(jsonRegex)
 
-        if (match) {
-            // 找到了JSON字符串，解析并打印
-            const jsonData = JSON.parse(match[0])
-            console.log(jsonData.data)
-            return jsonData.data
-        } else {
-            console.log('未找到有效的JSON数据')
-        }
-    })
+//Ocr识别
+const textOcr = async (imagePath: string): Promise<any> => {
+    // 准备待发送的指令
+    const imgObj = { "image_path": path.join(process.cwd(), imagePath) }
+    const imgStr = JSON.stringify(imgObj) + "\n"
+    child.stdin.write(imgStr)
 }
 
-// 定义一个销毁 worker 的函数
-const destroyWorker = async () => {
-    // if (worker) {
-    //     await worker.terminate()
-    // }
-}
-
-// 使用 onUnmounted 钩子来确保在组件销毁时销毁 worker
-onUnmounted(() => {
-    destroyWorker()
-})
-
-const getEnhancementLevel = async () => {
-    const processedImagePath = 'enhancement_level.png'
-    const cropOptions = { left: 130, top: 105, width: 30, height: 25 }
+//获取装备信息
+const getGearInfo = async () => {
+    const processedImagePath = 'gear_info.png'
+    const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
+    const blackOverlay = Buffer.from(
+        `<svg width="435" height="500">
+                <rect x="0" y="0" width="60" height="60" fill="black" />
+                <rect x="0" y="380" width="435" height="60" fill="black" />
+        </svg>`
+    )
     await sharp('screenshot.png')
         .resize(1600, 900)
         .extract(cropOptions)
+        .composite([{ input: blackOverlay, top: 0, left: 0 }])
         .toFile(processedImagePath)
-    const text = await textOcr(processedImagePath)
-    const numbers = text.match(/\d+/g)
-    if (numbers) {
-        var numericValue = parseInt(numbers.join(''))
-        enhancementLevel.value = numericValue
-    } else {
-        enhancementLevel.value = 0
-    }
-}
-
-const getPart = async () => {
-    const processedImagePath = 'part.png'
-    const cropOptions = { left: 216, top: 123, width: 45, height: 26 }
-    await sharp('screenshot.png')
-        .resize(1600, 900)
-        .extract(cropOptions)
-        .toFile(processedImagePath)
-    const text = await textOcr(processedImagePath)
-    part.value = text.replace(/\s/g, "")
-}
-
-const getPrimaryAttribute = async () => {
-    const processedImagePath = 'primary_attribute.png'
-    const cropOptions = { left: 80, top: 270, width: 300, height: 40 }
-    await sharp('screenshot.png')
-        .resize(1600, 900)
-        .extract(cropOptions)
-        .toFile(processedImagePath)
-    const text = await textOcr(processedImagePath)
-    const stringWithoutSpacesAndCommas = text.replace(/[\s,]+/g, '')
-    primaryAttribute.value = stringWithoutSpacesAndCommas.split(/(\d+%?)/).filter(Boolean)
-}
-
-const getAttribute = async () => {
-    const processedImagePath = 'attribute.png'
-    const cropOptions = { left: 45, top: 340, width: 410, height: 130 }
-    await sharp('screenshot.png')
-        .resize(1600, 900)
-        .extract(cropOptions)
-        .toFile(processedImagePath)
-    const text = await textOcr(processedImagePath)
-    const elements = text.split('\n').filter(function (element) {
-        return element.trim() !== ''
-    })
-    const processedElements = elements.map(function (element): [string, string] {
-        const stringWithoutSpaces = element.replace(/\s+/g, '')
-        const parts = stringWithoutSpaces.split(/(\d+%?)/).filter(Boolean)
-        return [parts[0], parts[1]]
-    })
-
-    attribute.value = processedElements
+    await textOcr(processedImagePath)
 }
 
 const calculateScore = (attribute: [string, string][]): number => {
@@ -314,6 +265,10 @@ const expectant = (): number => {
     }
     return expectant / 4 * Math.floor((17 - enhancementLevel.value) / 3)
 }
+
+onUnmounted(() => {
+    child.kill()
+})
 </script>
 
 <style lang="scss">
