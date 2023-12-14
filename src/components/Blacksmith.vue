@@ -57,6 +57,7 @@ const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""
 const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
+const activeElement = document.activeElement as HTMLElement
 
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
@@ -72,33 +73,65 @@ const takeScreenshot = () => {
         }
         console.log(stdout)
         await getPrimaryAttribute()
-        await getEnhancementLevel()
-        await getPart()
-        await getAttribute()
-        score.value = calculateScore(attribute.value)
-        enhancedRecommendation.value = calculateAnalysis()
-        expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
+        // await getEnhancementLevel()
+        // await getPart()
+        // await getAttribute()
+        // score.value = calculateScore(attribute.value)
+        // enhancedRecommendation.value = calculateAnalysis()
+        // expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
         src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
     })
-    const activeElement = document.activeElement as HTMLElement
     if (activeElement) {
         activeElement.blur()
     }
 }
-const worker = await createWorker('eng+chi_sim', 1, {
-    langPath: path.join(process.cwd(), 'lang-data'),
-    logger: m => console.log(m)
-})
+// const worker = await createWorker('eng+chi_sim', 1, {
+//     langPath: path.join(process.cwd(), 'lang-data'),
+//     logger: m => console.log(m)
+// })
 const textOcr = async (imagePath: string) => {
-    const { data: { text } } = await worker.recognize(imagePath)
-    return text
+    // const { data: { text } } = await worker.recognize(imagePath)
+    // return text
+    const ocrPath = path.join(process.cwd(), 'PaddleOCR-json', 'PaddleOCR-json.exe')
+    const newImagePath = path.join(process.cwd(), imagePath)
+    const configPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'config_chinese.txt')
+    const detPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'ch_PP-OCRv3_det_infer')
+    const recPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'ch_PP-OCRv3_rec_infer')
+    const dictPath = path.join(process.cwd(), 'PaddleOCR-json', 'models', 'dict_chinese.txt')
+    const ocrCommand = ocrPath
+        + ' -image_path=' + newImagePath
+        + ' -config_path=' + configPath
+        + ' -det_model_dir=' + detPath
+        + ' -rec_model_dir=' + recPath
+        + ' -rec_char_dict_path=' + dictPath
+    console.log(ocrCommand)
+    exec(ocrCommand, async (error, stdout, stderr) => {
+        if (error) {
+            // console.error('错误:', error)
+        }
+        if (stderr) {
+            // console.error('错误:', error)
+        }
+        // 使用正则表达式匹配JSON格式的字符串
+        const jsonRegex = /{.*}/s
+        const match = stdout.match(jsonRegex)
+
+        if (match) {
+            // 找到了JSON字符串，解析并打印
+            const jsonData = JSON.parse(match[0])
+            console.log(jsonData.data)
+            return jsonData.data
+        } else {
+            console.log('未找到有效的JSON数据')
+        }
+    })
 }
 
 // 定义一个销毁 worker 的函数
 const destroyWorker = async () => {
-    if (worker) {
-        await worker.terminate()
-    }
+    // if (worker) {
+    //     await worker.terminate()
+    // }
 }
 
 // 使用 onUnmounted 钩子来确保在组件销毁时销毁 worker
