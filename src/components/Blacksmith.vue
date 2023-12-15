@@ -7,7 +7,7 @@
                     {{ enhancementLevel !== undefined ? '+' + enhancementLevel : '' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="主属性">
-                    {{ primaryAttribute }}
+                    {{ primaryAttribute[0] }} {{ primaryAttribute[1] }}
                 </el-descriptions-item>
                 <el-descriptions-item :label="attribute[0][0]">{{ attribute[0][1] }}</el-descriptions-item>
                 <el-descriptions-item :label="attribute[1][0]">{{ attribute[1][1] }}</el-descriptions-item>
@@ -49,9 +49,9 @@ import sharp from 'sharp'
 const src = ref('')
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
-const enhancementLevel = ref()
+const enhancementLevel = ref(0)
 const part = ref('')
-const primaryAttribute = ref('')
+const primaryAttribute = ref<string[]>([])
 const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""]])
 const score = ref(0)
 const enhancedRecommendation = ref('')
@@ -74,6 +74,25 @@ child.stdout.on('data', (data: Buffer) => {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
                 const gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
+                if (gearInfo.length === 12) {
+                    // 在第一项添加 "+0"
+                    gearInfo.unshift("+0")
+                }
+                enhancementLevel.value = parseInt(gearInfo[0].replace("+", "")) // 强化等级 去掉 "+" 并转化为数字
+                part.value = gearInfo[1]
+                primaryAttribute.value.push(gearInfo[2]) // 第三项
+                primaryAttribute.value.push(gearInfo[3]) // 第四项
+                const mergedItems = []
+                for (let i = 4; i < gearInfo.length; i += 2) {
+                    if (i + 1 < gearInfo.length) {
+                        const mergedArray = [gearInfo[i], gearInfo[i + 1]]
+                        mergedItems.push(mergedArray)
+                    }
+                }
+                attribute.value = mergedItems as [string, string][]
+                score.value = calculateScore(attribute.value)
+                enhancedRecommendation.value = calculateAnalysis()
+                expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
                 console.log(gearInfo)
             } else {
                 console.log('Code is not 100, original output:', strOut)
@@ -109,11 +128,7 @@ const takeScreenshot = () => {
         // 检查 stdout 是否包含 "file pulled" 字符串
         if (stdout.includes("file pulled")) {
             await getGearInfo()
-            // score.value = calculateScore(attribute.value);
-            // enhancedRecommendation.value = calculateAnalysis();
-            // expectantScore.value = parseFloat((expectant() + score.value).toFixed(2));
-            // src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
-            src.value = 'gear_info.png?v=' + Math.random().toString(36).substring(7)
+            src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
         } else {
             console.error("截图失败，未能成功拉取文件")
         }
@@ -138,8 +153,14 @@ const getGearInfo = async () => {
     const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
     const blackOverlay = Buffer.from(
         `<svg width="435" height="500">
-                <rect x="0" y="0" width="60" height="60" fill="black" />
+                <rect x="0" y="0" width="80" height="60" fill="black" />
                 <rect x="0" y="380" width="435" height="60" fill="black" />
+                <rect x="0" y="50" width="435" height="110" fill="black" />
+                <rect x="132" y="20" width="50" height="50" fill="black" />
+                <rect x="0" y="160" width="50" height="60" fill="black" />
+                <rect x="0" y="210" width="435" height="30" fill="black" />
+                <rect x="0" y="440" width="60" height="60" fill="black" />
+                <rect x="165" y="440" width="80" height="60" fill="black" />
         </svg>`
     )
     await sharp('screenshot.png')
