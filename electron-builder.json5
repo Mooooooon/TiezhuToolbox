@@ -43,6 +43,7 @@
     "artifactName": "${productName}-Linux-${version}.${ext}"
   },
   "extraFiles": [
-    "./platform-tools"
+    "./platform-tools",
+    "./PaddleOCR-json"
   ],
 }
