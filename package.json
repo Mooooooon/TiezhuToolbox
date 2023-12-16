@@ -45,6 +45,7 @@
   "dependencies": {
     "element-plus": "^2.4.3",
     "pinia": "^2.1.7",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "sqlite3": "^5.1.6"
   }
 }

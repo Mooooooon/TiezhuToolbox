@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import fs from 'fs'
 import path from 'path'
 
+const sqlite3 = require('sqlite3').verbose()
 // The built directory structure
 //
 // ├─┬ dist-electron
@@ -85,6 +86,14 @@ async function createWindow() {
     // 例如，将消息写入文件
     const fs = require('fs')
     fs.appendFileSync('console.log', `${new Date().toISOString()}: [${level}] ${message}\n`)
+  })
+
+  const db = new sqlite3.Database('mydatabase.db', (err: any) => {
+    if (err) {
+      console.error('Could not open database', err)
+    } else {
+      console.log('Connected to the database')
+    }
   })
 }
 
