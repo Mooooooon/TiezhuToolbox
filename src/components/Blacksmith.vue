@@ -2,7 +2,7 @@
     <el-row>
         <el-col :span="12">
             <el-button @click="takeScreenshot">截图</el-button>
-            <el-descriptions class="gear-info" title="装备信息" :column="1">
+            <el-descriptions v-if="enhancedRecommendation" class="gear-info" title="装备信息" :column="1">
                 <el-descriptions-item label="强化等级">
                     {{ enhancementLevel !== undefined ? '+' + enhancementLevel : '' }}
                 </el-descriptions-item>
@@ -20,14 +20,14 @@
         <el-col :span="12">
             <el-row>
                 <el-col>
-                    <el-image :src="src">
+                    <el-image v-if="src" :src="src">
                         <template #placeholder>
                             <div class="image-slot">Loading<span class="dot">...</span></div>
                         </template>
                     </el-image>
                 </el-col>
             </el-row>
-            <el-row>
+            <el-row v-if="enhancedRecommendation">
                 <el-col :span="6">
                     <el-text class="mx-1" size="large">强化建议：</el-text>
                 </el-col>
@@ -44,8 +44,9 @@ import { onUnmounted, ref } from 'vue'
 import { exec, spawn } from 'child_process'
 import { useAdbStore } from '../store/adb'
 import path from 'path'
-import sharp from 'sharp'
+import fs from 'fs'
 
+const Sharp = require('sharp')
 const src = ref('')
 const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
@@ -114,8 +115,14 @@ child.on('close', () => {
 //截图
 const takeScreenshot = () => {
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
-    const adbCommand = adbPath + ' -s ' + selectedDeviceId + ' shell screencap -p /sdcard/screenshot.png && ' + adbPath + ' -s ' + selectedDeviceId + ' pull /sdcard/screenshot.png'
+    const tempFolderPath = path.join(process.cwd(), 'temp') // 指定temp文件夹的路径
+    const screenshotFilePath = path.join(tempFolderPath, 'screenshot.png') // 指定截图文件的路径
+    const adbCommand = adbPath + ' -s ' + selectedDeviceId + ' shell screencap -p /sdcard/screenshot.png && ' + adbPath + ' -s ' + selectedDeviceId + ' pull /sdcard/screenshot.png ' + screenshotFilePath
 
+    // 检查temp文件夹是否存在，不存在则创建它
+    if (!fs.existsSync(tempFolderPath)) {
+        fs.mkdirSync(tempFolderPath)
+    }
     exec(adbCommand, async (error, stdout, stderr) => {
         if (error) {
             console.error('截图错误:', error)
@@ -128,11 +135,12 @@ const takeScreenshot = () => {
         // 检查 stdout 是否包含 "file pulled" 字符串
         if (stdout.includes("file pulled")) {
             await getGearInfo()
-            src.value = 'screenshot.png?v=' + Math.random().toString(36).substring(7)
+            src.value = path.join('temp', 'screenshot.png') + '?v=' + Math.random().toString(36).substring(7)
         } else {
             console.error("截图失败，未能成功拉取文件")
         }
     })
+
     const activeElement = document.activeElement as HTMLElement
     if (activeElement) {
         activeElement.blur()
@@ -149,7 +157,7 @@ const textOcr = async (imagePath: string): Promise<any> => {
 
 //获取装备信息
 const getGearInfo = async () => {
-    const processedImagePath = 'gear_info.png'
+    const processedImagePath = path.join('temp', 'gear_info.png') // 使用 path.join 拼接路径
     const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
     const blackOverlay = Buffer.from(
         `<svg width="435" height="500">
@@ -163,7 +171,7 @@ const getGearInfo = async () => {
                 <rect x="165" y="440" width="80" height="60" fill="black" />
         </svg>`
     )
-    await sharp('screenshot.png')
+    await Sharp(path.join('temp', 'screenshot.png')) // 使用 path.join 拼接路径
         .resize(1600, 900)
         .extract(cropOptions)
         .composite([{ input: blackOverlay, top: 0, left: 0 }])
@@ -288,7 +296,21 @@ const expectant = (): number => {
 }
 
 onUnmounted(() => {
-    child.kill()
+    // 杀死子进程（如果有的话）
+    if (child) {
+        child.kill()
+    }
+
+    // 删除temp文件夹下的所有图片文件
+    const tempFolderPath = path.join(process.cwd(), 'temp')
+    if (fs.existsSync(tempFolderPath)) {
+        fs.readdirSync(tempFolderPath).forEach((file) => {
+            const filePath = path.join(tempFolderPath, file)
+            if (fs.statSync(filePath).isFile() && /\.(png|jpg|jpeg|gif|bmp)$/i.test(file)) {
+                fs.unlinkSync(filePath) // 删除图片文件
+            }
+        })
+    }
 })
 </script>
 
