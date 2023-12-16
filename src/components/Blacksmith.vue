@@ -89,7 +89,6 @@ child.stdout.on('data', (data: Buffer) => {
                 mergedItem.push(gearInfo[2]) // 第三项
                 mergedItem.push(gearInfo[3]) // 第四项
                 primaryAttribute.value = mergedItem
-                console.log(primaryAttribute)
                 const mergedItems = []
                 for (let i = 4; i < gearInfo.length; i += 2) {
                     if (i + 1 < gearInfo.length) {
@@ -101,7 +100,6 @@ child.stdout.on('data', (data: Buffer) => {
                 score.value = calculateScore(attribute.value)
                 enhancedRecommendation.value = calculateAnalysis()
                 expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
-                console.log(gearInfo)
             } else {
                 console.log('Code is not 100, original output:', strOut)
             }
@@ -142,7 +140,7 @@ const takeScreenshot = () => {
         // 检查 stdout 是否包含 "file pulled" 字符串
         if (stdout.includes("file pulled")) {
             await getGearInfo()
-            src.value = path.join('temp', 'screenshot.png') + '?v=' + Math.random().toString(36).substring(7)
+            src.value = path.join(process.cwd(), 'temp', 'screenshot.png') + '?v=' + Math.random().toString(36).substring(7)
         } else {
             console.error("截图失败，未能成功拉取文件")
         }
