@@ -44,8 +44,9 @@
     "artifactName": "${productName}-Linux-${version}.${ext}"
   },
   "extraFiles": [
-    "./platform-tools",
-    "./PaddleOCR-json"
+    "./platform-tools/",
+    "./PaddleOCR-json/",
+    "./heroes.db"
   ],
   "asar": true,
   "asarUnpack": [ 
