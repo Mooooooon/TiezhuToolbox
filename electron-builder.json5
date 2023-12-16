@@ -51,4 +51,7 @@
     "**/node_modules/sharp/**/*",
     "**/node_modules/@img/**/*"
   ],
+  "electronLanguages": [
+    "zh-CN"
+  ]
 }

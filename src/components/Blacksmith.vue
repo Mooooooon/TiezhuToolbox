@@ -28,10 +28,8 @@
                 </el-col>
             </el-row>
             <el-row v-if="enhancedRecommendation">
-                <el-col :span="6">
+                <el-col>
                     <el-text class="mx-1" size="large">强化建议：</el-text>
-                </el-col>
-                <el-col :span="18">
                     <el-text class="mx-1" size="large">{{ enhancedRecommendation }}</el-text>
                 </el-col>
             </el-row>
@@ -75,14 +73,23 @@ child.stdout.on('data', (data: Buffer) => {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
                 const gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
+                if (gearInfo.length === 11) {
+                    // 删除下标为9的元素
+                    gearInfo.splice(9, 1)
+                    // 在下标9和10之间插入两个空字符串
+                    gearInfo.splice(9, 0, '', '')
+                }
                 if (gearInfo.length === 12) {
                     // 在第一项添加 "+0"
                     gearInfo.unshift("+0")
                 }
                 enhancementLevel.value = parseInt(gearInfo[0].replace("+", "")) // 强化等级 去掉 "+" 并转化为数字
                 part.value = gearInfo[1]
-                primaryAttribute.value.push(gearInfo[2]) // 第三项
-                primaryAttribute.value.push(gearInfo[3]) // 第四项
+                const mergedItem = []
+                mergedItem.push(gearInfo[2]) // 第三项
+                mergedItem.push(gearInfo[3]) // 第四项
+                primaryAttribute.value = mergedItem
+                console.log(primaryAttribute)
                 const mergedItems = []
                 for (let i = 4; i < gearInfo.length; i += 2) {
                     if (i + 1 < gearInfo.length) {
