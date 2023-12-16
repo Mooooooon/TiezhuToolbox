@@ -91,6 +91,14 @@ child.stdout.on('data', (data: Buffer) => {
                     // 在第一项添加 "+0"
                     gearInfo.unshift("+0")
                 }
+                if (gearInfo.length !== 13) {
+                    ElMessage({
+                        message: '数据可能不正确，请确认图片内容',
+                        type: 'error',
+                    })
+                    console.log("数据可能不正确，请确认图片内容")
+                    return
+                }
                 enhancementLevel.value = parseInt(gearInfo[0].replace("+", "")) // 强化等级 去掉 "+" 并转化为数字
                 part.value = gearInfo[1]
                 const mergedItem = []
@@ -109,6 +117,12 @@ child.stdout.on('data', (data: Buffer) => {
                 enhancedRecommendation.value = calculateAnalysis()
                 expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
             } else {
+                if (jsonOutput.code === 101) {
+                    ElMessage({
+                        message: '没有获取到数据，请确认图片内容',
+                        type: 'error',
+                    })
+                }
                 console.log('Code is not 100, original output:', strOut)
             }
         } catch (e) {

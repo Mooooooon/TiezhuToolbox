@@ -1,6 +1,8 @@
 import { app, BrowserWindow, shell, ipcMain, protocol, net } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
+import fs from 'fs'
+import path from 'path'
 
 // The built directory structure
 //
@@ -77,6 +79,13 @@ async function createWindow() {
     return { action: 'deny' }
   })
   // win.webContents.on('will-navigate', (event, url) => { }) #344
+
+  win.webContents.on('console-message', (event, level, message) => {
+    // 将消息记录到文件或其他日志输出方式
+    // 例如，将消息写入文件
+    const fs = require('fs')
+    fs.appendFileSync('console.log', `${new Date().toISOString()}: [${level}] ${message}\n`)
+  })
 }
 
 app.whenReady().then(() => {
@@ -126,3 +135,9 @@ ipcMain.handle('open-win', (_, arg) => {
 })
 
 app.commandLine.appendSwitch('disable-features', 'WidgetLayering')
+
+const logPath = path.join(process.cwd(), 'error.log')
+
+process.on('uncaughtException', (error) => {
+  fs.appendFileSync(logPath, `${new Date().toISOString()}: ${error.stack}\n`)
+})
