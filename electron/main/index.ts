@@ -88,12 +88,23 @@ async function createWindow() {
     fs.appendFileSync('console.log', `${new Date().toISOString()}: [${level}] ${message}\n`)
   })
 
-  const db = new sqlite3.Database('mydatabase.db', (err: any) => {
+  const db = new sqlite3.Database('heroes.db', (err: any) => {
     if (err) {
       console.error('Could not open database', err)
     } else {
       console.log('Connected to the database')
     }
+  })
+
+  ipcMain.on('query-database', (event, sql) => {
+    db.all(sql, [], (err: { message: any }, rows: any) => {
+      if (err) {
+        console.error('Error querying database', err)
+        event.sender.send('query-result', { error: err.message })
+      } else {
+        event.sender.send('query-result', { data: rows })
+      }
+    })
   })
 }
 

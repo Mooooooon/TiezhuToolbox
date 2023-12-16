@@ -44,6 +44,7 @@ import { useAdbStore } from '../store/adb'
 import path from 'path'
 import fs from 'fs'
 import { ElMessage } from 'element-plus'
+import { ipcRenderer } from 'electron'
 
 const Sharp = require('sharp')
 const src = ref('')
@@ -116,6 +117,8 @@ child.stdout.on('data', (data: Buffer) => {
                 score.value = calculateScore(attribute.value)
                 enhancedRecommendation.value = calculateAnalysis()
                 expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
+
+                ipcRenderer.send('query-database', 'SELECT * FROM hero_ability')
             } else {
                 if (jsonOutput.code === 101) {
                     ElMessage({
@@ -130,6 +133,16 @@ child.stdout.on('data', (data: Buffer) => {
         }
     }
 })
+// 监听sql
+ipcRenderer.on('query-result', (event, result) => {
+    if (result.error) {
+        console.error('Error in database query', result.error)
+    } else {
+        console.log('Query result:', result.data)
+        // 在渲染进程中处理查询结果
+    }
+})
+
 // 监听退出事件
 child.on('close', () => {
     console.log('子进程退出')
