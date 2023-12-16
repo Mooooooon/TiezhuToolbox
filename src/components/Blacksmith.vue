@@ -38,11 +38,12 @@
 </template>
 
 <script lang="ts" setup>
-import { onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { exec, spawn } from 'child_process'
 import { useAdbStore } from '../store/adb'
 import path from 'path'
 import fs from 'fs'
+import { ElMessage } from 'element-plus'
 
 const Sharp = require('sharp')
 const src = ref('')
@@ -56,6 +57,9 @@ const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
 
+onMounted(() => {
+    ElMessage('始化中……')
+})
 const child = spawn(path.join(process.cwd(), 'PaddleOCR-json', 'PaddleOCR-json.exe'), {
     cwd: path.join(process.cwd(), 'PaddleOCR-json'),
     stdio: ['pipe', 'pipe', 'pipe']
@@ -66,6 +70,10 @@ child.stdout.on('data', (data: Buffer) => {
     // 检测启动成功
     if (strOut.includes('OCR init completed.')) {
         console.log('初始化完成！')
+        ElMessage({
+            message: '初始化完成！',
+            type: 'success',
+        })
     } else if (strOut.includes('PaddleOCR-json v1.3.0')) {
         console.log(strOut)
     } else {
@@ -140,7 +148,9 @@ const takeScreenshot = () => {
         // 检查 stdout 是否包含 "file pulled" 字符串
         if (stdout.includes("file pulled")) {
             await getGearInfo()
-            src.value = path.join(process.cwd(), 'temp', 'screenshot.png') + '?v=' + Math.random().toString(36).substring(7)
+            const randomVersion = Math.random().toString(36).substring(7)
+            const imagePath = path.join('tiezhu:', process.cwd(), 'temp', 'screenshot.png')
+            src.value = `${imagePath}?v=${randomVersion}`
         } else {
             console.error("截图失败，未能成功拉取文件")
         }

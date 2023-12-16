@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, protocol, net } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
 
@@ -79,7 +79,12 @@ async function createWindow() {
   // win.webContents.on('will-navigate', (event, url) => { }) #344
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  protocol.handle('tiezhu', (request) =>
+    net.fetch('file://' + request.url.slice('tiezhu:/'.length))
+  )
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   win = null
