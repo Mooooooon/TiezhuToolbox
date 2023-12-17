@@ -13,12 +13,13 @@
                 <el-descriptions-item :label="attribute[1][0]">{{ attribute[1][1] }}</el-descriptions-item>
                 <el-descriptions-item :label="attribute[2][0]">{{ attribute[2][1] }}</el-descriptions-item>
                 <el-descriptions-item :label="attribute[3][0]">{{ attribute[3][1] }}</el-descriptions-item>
+                <el-descriptions-item label="套装">{{ set }}</el-descriptions-item>
                 <el-descriptions-item label="分数">{{ score }}</el-descriptions-item>
                 <el-descriptions-item label="预期分数">{{ expectantScore }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
         <el-col :span="12">
-            <el-row>
+            <!-- <el-row>
                 <el-col>
                     <el-image v-if="src" :src="src">
                         <template #placeholder>
@@ -26,12 +27,31 @@
                         </template>
                     </el-image>
                 </el-col>
-            </el-row>
+            </el-row> -->
             <el-row v-if="enhancedRecommendation">
                 <el-col>
                     <el-text class="mx-1" size="large">强化建议：</el-text>
                     <el-text class="mx-1" size="large">{{ enhancedRecommendation }}</el-text>
                 </el-col>
+                <el-col style="margin-top: 10px; margin-bottom: 10px;">
+                    <el-text class="mx-1" size="large">可用英雄：</el-text>
+                </el-col>
+                <el-scrollbar style="height: 320px; overflow-y: auto;">
+                    <el-row v-if="enhancedRecommendation">
+                        <!-- topHeroes中的el-col部分移入el-scrollbar -->
+                        <el-col :span="12" v-for="hero in topHeroes" :key="hero.heroCode">
+                            <el-avatar :size="50"
+                                :src="`https://static.smilegatemegaport.com/event/live/epic7/guide/images/hero/${hero.heroCode}_s.png`" />
+                            <el-descriptions :size="'small'" :column="1" class="hero-info">
+                                <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
+                                    :label="attribute[0]">
+                                    <el-rate v-model="attribute[1]" disabled show-score text-color="#ff9900" :size="'small'"
+                                        score-template="" />
+                                </el-descriptions-item>
+                            </el-descriptions>
+                        </el-col>
+                    </el-row>
+                </el-scrollbar>
             </el-row>
         </el-col>
     </el-row>
@@ -57,6 +77,50 @@ const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""
 const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
+const set = ref('')
+interface HeroAttribute {
+    [index: number]: [string, number] // [属性名称, 属性值]
+}
+interface Hero {
+    heroCode: string
+    attributes: HeroAttribute[]
+    priority: number
+}
+// 使用 ref 创建响应式引用
+const topHeroes = ref<Hero[]>([])
+const setMapping: { [key: string]: string } = {
+    "破灭": "set_cri_dmg",
+    "愤怒": "set_rage",
+    "命中": "set_acc",
+    "穿透": "set_penetrate",
+    "攻击": "set_att",
+    "抵抗": "set_res",
+    "憎恨": "set_revenge",
+    "防御": "set_def",
+    "吸血": "set_vampire",
+    "伤口": "set_scar",
+    "生命值": "set_max_hp",
+    "反击": "set_counter",
+    "守护": "set_shield",
+    "速度": "set_speed",
+    "夹攻": "set_coop",
+    "激流": "set_torrent",
+    "暴击": "set_cri",
+    "免疫": "set_immune"
+}
+type StatsMapping = {
+    [key in string]: string
+}
+const statsMapping: StatsMapping = {
+    "攻击力": "att",
+    "防御力": "def",
+    "生命值": "max_hp",
+    "效果命中": "acc",
+    "效果抗性": "res",
+    "速度": "speed",
+    "暴击伤害": "cri_dmg",
+    "暴击率": "cri"
+}
 
 onMounted(() => {
     ElMessage('始化中……')
@@ -65,6 +129,13 @@ const child = spawn(path.join(process.cwd(), 'PaddleOCR-json', 'PaddleOCR-json.e
     cwd: path.join(process.cwd(), 'PaddleOCR-json'),
     stdio: ['pipe', 'pipe', 'pipe']
 })
+const translateSetName = (cnName: string) => {
+    return setMapping[cnName]
+}
+const translateStatName = (cnStatName: string): string => {
+    return statsMapping[cnStatName]
+}
+
 // 从子进程接收数据
 child.stdout.on('data', (data: Buffer) => {
     let strOut: string = data.toString()
@@ -103,8 +174,8 @@ child.stdout.on('data', (data: Buffer) => {
                 enhancementLevel.value = parseInt(gearInfo[0].replace("+", "")) // 强化等级 去掉 "+" 并转化为数字
                 part.value = gearInfo[1]
                 const mergedItem = []
-                mergedItem.push(gearInfo[2]) // 第三项
-                mergedItem.push(gearInfo[3]) // 第四项
+                mergedItem.push(gearInfo[2])
+                mergedItem.push(gearInfo[3])
                 primaryAttribute.value = mergedItem
                 const mergedItems = []
                 for (let i = 4; i < gearInfo.length; i += 2) {
@@ -114,11 +185,16 @@ child.stdout.on('data', (data: Buffer) => {
                     }
                 }
                 attribute.value = mergedItems as [string, string][]
+
+
+                const original_string = gearInfo[12]
+                const modified_string = original_string.replace("套", "").replace("装", "")
+                set.value = modified_string
                 score.value = calculateScore(attribute.value)
                 enhancedRecommendation.value = calculateAnalysis()
                 expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
 
-                ipcRenderer.send('query-database', 'SELECT * FROM hero_ability')
+                ipcRenderer.send('query-database', translateSetName(set.value))
             } else {
                 if (jsonOutput.code === 101) {
                     ElMessage({
@@ -134,14 +210,36 @@ child.stdout.on('data', (data: Buffer) => {
     }
 })
 // 监听sql
-ipcRenderer.on('query-result', (event, result) => {
-    if (result.error) {
-        console.error('Error in database query', result.error)
-    } else {
-        console.log('Query result:', result.data)
-        // 在渲染进程中处理查询结果
-    }
-})
+if (!ipcRenderer.listenerCount('query-result')) {
+    ipcRenderer.on('query-result', (event, result) => {
+        if (result.error) {
+            console.error('Error in database query', result.error)
+        } else {
+            console.log('Query result:', result.data)
+            recommendGear(result)
+        }
+    })
+}
+
+const recommendGear = (heros: { data: any[] }) => {
+    console.log('Equipment attributes:', attribute.value)
+    // 计算每个英雄的优先级
+    const heroPriorities = heros.data.map(hero => {
+        let priority = 0
+        let attributesArray: any[][] = []
+        attribute.value.forEach(([cnName, _]) => {
+            const engName = translateStatName(cnName) // 将中文属性名转换为英文
+            priority += hero[engName] || 0
+            attributesArray.push([cnName, hero[engName]]) // 将属性名和权重添加到数组中
+        })
+        return { heroCode: hero.heroCode, attributes: attributesArray, priority }
+    })
+    topHeroes.value = heroPriorities.sort((a, b) => b.priority - a.priority)
+    // 输出结果
+    console.log('Top Heroes:', topHeroes.value)
+}
+
+
 
 // 监听退出事件
 child.on('close', () => {
@@ -365,6 +463,24 @@ onUnmounted(() => {
 .gear-info .el-descriptions__label {
     width: 100px;
     display: inline-block;
+}
+
+.gear-info .el-descriptions__cell {
+    padding-bottom: 5px !important;
+}
+
+.hero-info .el-descriptions__label {
+    width: 48px;
+    display: inline-block;
+}
+
+.hero-info .el-descriptions__cell {
+    padding-bottom: 0 !important;
+    line-height: 18px !important;
+}
+
+.hero-info {
+    margin-bottom: 10px;
 }
 </style>
   

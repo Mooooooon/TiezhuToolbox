@@ -96,8 +96,21 @@ async function createWindow() {
     }
   })
 
-  ipcMain.on('query-database', (event, sql) => {
-    db.all(sql, [], (err: { message: any }, rows: any) => {
+  ipcMain.on('query-database', (event, att) => {
+    const sql = `
+      SELECT *
+      FROM (
+        SELECT ha.*, 
+              ROW_NUMBER() OVER (PARTITION BY he.heroCode ORDER BY he.rate DESC) as rn
+        FROM hero_equip he
+        JOIN hero_ability ha ON he.heroCode = ha.heroCode
+        WHERE he.equip_list LIKE '%' || ? || '%'
+      ) 
+      WHERE rn = 1
+    `
+
+
+    db.all(sql, [att], (err, rows) => {
       if (err) {
         console.error('Error querying database', err)
         event.sender.send('query-result', { error: err.message })
