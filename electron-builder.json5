@@ -46,6 +46,7 @@
   "extraFiles": [
     "./platform-tools/",
     "./PaddleOCR-json/",
+    "./avatar/",
     "./heroes.db"
   ],
   "asar": true,

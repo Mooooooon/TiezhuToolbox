@@ -1,6 +1,6 @@
 <template>
     <el-row>
-        <el-col :span="12">
+        <el-col :span="10">
             <el-button @click="takeScreenshot">截图</el-button>
             <el-descriptions v-if="enhancedRecommendation" class="gear-info" title="装备信息" :column="1">
                 <el-descriptions-item label="强化等级">
@@ -18,7 +18,7 @@
                 <el-descriptions-item label="预期分数">{{ expectantScore }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
-        <el-col :span="12">
+        <el-col :span="14">
             <!-- <el-row>
                 <el-col>
                     <el-image v-if="src" :src="src">
@@ -36,23 +36,38 @@
                 <el-col style="margin-top: 10px; margin-bottom: 10px;">
                     <el-text class="mx-1" size="large">可用英雄：</el-text>
                 </el-col>
-                <el-scrollbar style="height: 320px; overflow-y: auto;min-width: 300px;">
-                    <el-row v-if="enhancedRecommendation">
-                        <!-- topHeroes中的el-col部分移入el-scrollbar -->
-                        <el-col :span="12" v-for="hero in topHeroes" :key="hero.heroCode">
-                            <el-avatar :size="50" :src="hero.avatar" />
-                            <el-text class="mx-1" size="small"> 套装使用率：{{ hero.rate }}</el-text>
-                            <el-text class="mx-1" size="small"> 套装使用率：{{ hero.rate }}</el-text>
-                            <el-descriptions :size="'small'" :column="1" class="hero-info">
-                                <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
-                                    :label="attribute[0]">
-                                    <el-rate v-model="attribute[1]" disabled show-score text-color="#ff9900" :size="'small'"
-                                        score-template="" />
-                                </el-descriptions-item>
-                            </el-descriptions>
-                        </el-col>
-                    </el-row>
-                </el-scrollbar>
+                <el-col>
+                    <el-scrollbar style="height: 320px; overflow-y: auto;min-width: 300px;">
+                        <el-row v-if="enhancedRecommendation">
+                            <!-- topHeroes中的el-col部分移入el-scrollbar -->
+                            <el-col :span="12" v-for="hero in topHeroes" :key="hero.heroCode">
+                                <el-row style="margin-bottom: 0;">
+                                    <el-col :span="7">
+                                        <el-avatar :size="50" :src="hero.avatar" />
+                                    </el-col>
+                                    <el-col :span="17">
+                                        <el-row style="margin-bottom: 0;">
+                                            <el-col style="margin-top: 7px;">
+                                                <el-image v-for="equipImage in hero.equipImages" :key="equipImage.equipCode"
+                                                    style="width: 20px; margin-right: 5px;" :src="equipImage.imagePath" />
+                                            </el-col>
+                                            <el-col>
+                                                <el-text class="mx-1" size="small">套装使用率:{{ hero.rate }}%</el-text>
+                                            </el-col>
+                                        </el-row>
+                                    </el-col>
+                                </el-row>
+                                <el-descriptions :size="'small'" :column="1" class="hero-info">
+                                    <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
+                                        :label="attribute[0]">
+                                        <el-rate v-model="attribute[1]" disabled show-score text-color="#ff9900"
+                                            :size="'small'" score-template="" />
+                                    </el-descriptions-item>
+                                </el-descriptions>
+                            </el-col>
+                        </el-row>
+                    </el-scrollbar>
+                </el-col>
             </el-row>
         </el-col>
     </el-row>
@@ -89,6 +104,11 @@ interface Hero {
     priority: number
     rate: number
     avatar: string
+    equipImages: EquipImage[]
+}
+interface EquipImage {
+    equipCode: string // 装备编码
+    imagePath: string // 装备图片路径
 }
 // 使用 ref 创建响应式引用
 const topHeroes = ref<Hero[]>([])
@@ -219,7 +239,6 @@ const queryResultListener = (event: any, result: { error?: any; data: any }) => 
     if (result.error) {
         console.error('Error in database query', result.error)
     } else {
-        console.log('Query result:', result.data)
         recommendGear(result)
     }
 }
@@ -227,7 +246,9 @@ const queryResultListener = (event: any, result: { error?: any; data: any }) => 
 ipcRenderer.on('query-result', queryResultListener)
 
 const recommendGear = (heros: { data: any[] }) => {
-    const resultArray = attribute.value.map(item => item[0])
+    const resultArray = attribute.value
+        .map(item => item[0]) // 获取 item[0] 的值
+        .filter(item => item !== '') // 使用 filter 去掉空字符串
     const isSpecialPart = ["项链", "戒指", "鞋子"].includes(part.value)
     let primaryAttributeName = isSpecialPart ? translateStatName(primaryAttribute.value[0]) : ''
 
@@ -260,11 +281,21 @@ const recommendGear = (heros: { data: any[] }) => {
             }
         }
 
+        // 解析 "equip_list" 字段为数组
+        const equipList = JSON.parse(hero.equip_list)
+        // 遍历装备列表，为每个装备生成图片路径
+        const equipImages = equipList.map((equipCode: string) => {
+            const imagePath = path.join('tiezhu:', process.cwd(), 'avatar', equipCode + '.png')
+            return { equipCode, imagePath }
+        })
         priority = attributesArray.reduce((total, [_, value]) => total + value, 0)
 
         const imagePath = path.join('tiezhu:', process.cwd(), 'avatar', hero.heroCode + '.png')
-        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate, avatar: imagePath }]
+
+        // 构建返回值对象，将解析后的 "equip_list" 添加到返回值中
+        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate, avatar: imagePath, equipImages }]
     })
+
 
     // 过滤掉priority小于等于5的英雄
     const filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
