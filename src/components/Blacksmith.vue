@@ -40,7 +40,7 @@
                     <el-row v-if="enhancedRecommendation">
                         <!-- topHeroes中的el-col部分移入el-scrollbar -->
                         <el-col :span="12" v-for="hero in topHeroes" :key="hero.heroCode">
-                            <el-avatar :size="50" :src="`src/assets/avatar/${hero.heroCode}.png`" />
+                            <el-avatar :size="50" :src="hero.avatar" />
                             <el-text class="mx-1" size="small"> 套装使用率：{{ hero.rate }}</el-text>
                             <el-text class="mx-1" size="small"> 套装使用率：{{ hero.rate }}</el-text>
                             <el-descriptions :size="'small'" :column="1" class="hero-info">
@@ -88,6 +88,7 @@ interface Hero {
     attributes: HeroAttribute[]
     priority: number
     rate: number
+    avatar: string
 }
 // 使用 ref 创建响应式引用
 const topHeroes = ref<Hero[]>([])
@@ -260,7 +261,9 @@ const recommendGear = (heros: { data: any[] }) => {
         }
 
         priority = attributesArray.reduce((total, [_, value]) => total + value, 0)
-        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate }]
+
+        const imagePath = path.join('tiezhu:', process.cwd(), 'avatar', hero.heroCode + '.png')
+        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate, avatar: imagePath }]
     })
 
     // 过滤掉priority小于等于5的英雄
