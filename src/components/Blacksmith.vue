@@ -2,6 +2,7 @@
     <el-row>
         <el-col :span="10">
             <el-button @click="takeScreenshot">截图</el-button>
+            <el-text class="mx-1"> 请打开强化装备界面</el-text>
             <el-descriptions v-if="enhancedRecommendation" class="gear-info" title="装备信息" :column="1">
                 <el-descriptions-item label="强化等级">
                     {{ enhancementLevel !== undefined ? '+' + enhancementLevel : '' }}

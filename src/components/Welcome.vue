@@ -1,20 +1,51 @@
 <template>
     <el-row>
-        <el-autocomplete v-model="state" :fetch-suggestions="querySearch" placeholder="输入模拟器端口" @select="handleSelect"
-            class="port-input" clearable>
-            <template #default="{ item }">
-                <span class="name">{{ item.name }}</span>
-                <span class="value">{{ item.value }}</span>
-            </template>
-        </el-autocomplete>
-    </el-row>
-    <el-row>
-        <el-button @click="connectADB">连接</el-button>
-    </el-row>
-    <el-row>
-        <el-select v-model="value" placeholder="选择模拟器" @change="handleChange" class="device-select">
-            <el-option v-for="item in options" :value="item.value" />
-        </el-select>
+        <el-col :span="12">
+            <el-row>
+                <el-col>
+                    <el-autocomplete v-model="state" :fetch-suggestions="querySearch" placeholder="输入模拟器端口"
+                        @select="handleSelect" class="port-input" clearable>
+                        <template #default="{ item }">
+                            <span class="name">{{ item.name }}</span>
+                            <span class="value">{{ item.value }}</span>
+                        </template>
+                    </el-autocomplete>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col>
+                    <el-button @click="connectADB">连接</el-button>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col>
+                    <el-select v-model="value" placeholder="选择模拟器" @change="handleChange" class="device-select">
+                        <el-option v-for="item in options" :value="item.value" />
+                    </el-select>
+                </el-col>
+            </el-row>
+        </el-col>
+        <el-col :span="12">
+            <el-row>
+                <el-text type="danger">仅支持16:9 分辨率请勿太低</el-text>
+            </el-row>
+            <el-row>
+                <el-text>输入端口号后连接模拟器 默认端口号不一定对请自己查看</el-text>
+            </el-row>
+            <el-row>
+                <el-text>以85红装为基础制作 其他等级仅供参考</el-text>
+            </el-row>
+            <el-row>
+                <el-text>不考虑纯速度装 纯速度装请自行斟酌</el-text>
+            </el-row>
+            <el-row>
+                <el-text>+6成本较低 +3后不推荐的装备也可以考虑强化</el-text>
+            </el-row>
+            <el-row>
+                <el-link href="https://github.com/Mooooooon/TiezhuToolbox" type="primary" target="_blank">Github</el-link>
+                <el-text>👈给我点个Star吧⭐</el-text>
+            </el-row>
+        </el-col>
     </el-row>
 </template>
   
