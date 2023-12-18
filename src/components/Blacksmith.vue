@@ -40,8 +40,7 @@
                     <el-row v-if="enhancedRecommendation">
                         <!-- topHeroes中的el-col部分移入el-scrollbar -->
                         <el-col :span="12" v-for="hero in topHeroes" :key="hero.heroCode">
-                            <el-avatar :size="50"
-                                :src="`https://static.smilegatemegaport.com/event/live/epic7/guide/images/hero/${hero.heroCode}_s.png`" />
+                            <el-avatar :size="50" :src="`src/assets/avatar/${hero.heroCode}.png`" />
                             <el-descriptions :size="'small'" :column="1" class="hero-info">
                                 <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
                                     :label="attribute[0]">
@@ -153,8 +152,9 @@ child.stdout.on('data', (data: Buffer) => {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
                 const gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
-                if (gearInfo.length === 11) {
+                if (gearInfo[9] === '强化+12时获得') {
                     // 删除下标为9的元素
+                    gearInfo.splice(9, 1)
                     gearInfo.splice(9, 1)
                     // 在下标9和10之间插入两个空字符串
                     gearInfo.splice(9, 0, '', '')
@@ -209,17 +209,17 @@ child.stdout.on('data', (data: Buffer) => {
         }
     }
 })
-// 监听sql
-if (!ipcRenderer.listenerCount('query-result')) {
-    ipcRenderer.on('query-result', (event, result) => {
-        if (result.error) {
-            console.error('Error in database query', result.error)
-        } else {
-            console.log('Query result:', result.data)
-            recommendGear(result)
-        }
-    })
+
+const queryResultListener = (event: any, result: { error?: any; data: any }) => {
+    if (result.error) {
+        console.error('Error in database query', result.error)
+    } else {
+        console.log('Query result:', result.data)
+        recommendGear(result)
+    }
 }
+// 监听sql
+ipcRenderer.on('query-result', queryResultListener)
 
 const recommendGear = (heros: { data: any[] }) => {
     console.log('Equipment attributes:', attribute.value)
@@ -234,10 +234,15 @@ const recommendGear = (heros: { data: any[] }) => {
         })
         return { heroCode: hero.heroCode, attributes: attributesArray, priority }
     })
-    topHeroes.value = heroPriorities.sort((a, b) => b.priority - a.priority)
+
+    // 过滤掉priority小于等于5的英雄
+    const filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
+
+    topHeroes.value = filteredHeroes.sort((a, b) => b.priority - a.priority)
     // 输出结果
     console.log('Top Heroes:', topHeroes.value)
 }
+
 
 
 
@@ -436,6 +441,9 @@ const expectant = (): number => {
 }
 
 onUnmounted(() => {
+    //停止监听
+    ipcRenderer.removeListener('query-result', queryResultListener)
+
     // 杀死子进程（如果有的话）
     if (child) {
         child.kill()
