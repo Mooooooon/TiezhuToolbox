@@ -106,6 +106,13 @@ const connectADB = () => {
                 options.value = devices  // 更新 Pinia store 中的设备列表
                 adbStore.deviceList = options.value
                 console.log('更新后的设备:', options.value)
+
+                // 自动选择选项
+                if (options.value.length === 1) {
+                    value.value = options.value[0].value
+                    adbStore.device = options.value[0].value
+                    console.log('自动选择的设备:', adbStore.device)
+                }
             })
         } else {
             ElMessage.error('模拟器连接失败。')
