@@ -48,7 +48,7 @@
                                     <el-col :span="17">
                                         <el-row style="margin-bottom: 0;">
                                             <el-col style="margin-top: 7px;">
-                                                <el-image v-for="equipImage in hero.equipImages" :key="equipImage.equipCode"
+                                                <el-image v-for="equipImage in hero.equipImages"
                                                     style="width: 20px; margin-right: 5px;" :src="equipImage.imagePath" />
                                             </el-col>
                                             <el-col>
@@ -81,7 +81,6 @@ import path from 'path'
 import fs from 'fs'
 import { ElMessage } from 'element-plus'
 import { ipcRenderer } from 'electron'
-import { getRandomInt } from 'element-plus/es/utils'
 
 const Sharp = require('sharp')
 const src = ref('')
@@ -318,6 +317,13 @@ child.on('close', () => {
 
 //截图
 const takeScreenshot = () => {
+    if (adbStore.status === 0) {
+        ElMessage({
+            message: '尚未连接',
+            type: 'error',
+        })
+        return
+    }
     const adbPath = path.join(process.cwd(), 'platform-tools', 'adb.exe')
     const tempFolderPath = path.join(process.cwd(), 'temp') // 指定temp文件夹的路径
     const screenshotFilePath = path.join(tempFolderPath, 'screenshot.png') // 指定截图文件的路径
