@@ -36,11 +36,13 @@
                 <el-col style="margin-top: 10px; margin-bottom: 10px;">
                     <el-text class="mx-1" size="large">可用英雄：</el-text>
                 </el-col>
-                <el-scrollbar style="height: 320px; overflow-y: auto;">
+                <el-scrollbar style="height: 320px; overflow-y: auto;min-width: 300px;">
                     <el-row v-if="enhancedRecommendation">
                         <!-- topHeroes中的el-col部分移入el-scrollbar -->
                         <el-col :span="12" v-for="hero in topHeroes" :key="hero.heroCode">
                             <el-avatar :size="50" :src="`src/assets/avatar/${hero.heroCode}.png`" />
+                            <el-text class="mx-1" size="small"> 套装使用率：{{ hero.rate }}</el-text>
+                            <el-text class="mx-1" size="small"> 套装使用率：{{ hero.rate }}</el-text>
                             <el-descriptions :size="'small'" :column="1" class="hero-info">
                                 <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
                                     :label="attribute[0]">
@@ -64,6 +66,7 @@ import path from 'path'
 import fs from 'fs'
 import { ElMessage } from 'element-plus'
 import { ipcRenderer } from 'electron'
+import { getRandomInt } from 'element-plus/es/utils'
 
 const Sharp = require('sharp')
 const src = ref('')
@@ -71,7 +74,7 @@ const adbStore = useAdbStore()
 const selectedDeviceId = adbStore.device
 const enhancementLevel = ref(0)
 const part = ref('')
-const primaryAttribute = ref<string[]>([])
+const primaryAttribute = ref<string[]>(['', ''])
 const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""]])
 const score = ref(0)
 const enhancedRecommendation = ref('')
@@ -84,6 +87,7 @@ interface Hero {
     heroCode: string
     attributes: HeroAttribute[]
     priority: number
+    rate: number
 }
 // 使用 ref 创建响应式引用
 const topHeroes = ref<Hero[]>([])
@@ -171,7 +175,7 @@ child.stdout.on('data', (data: Buffer) => {
                     console.log("数据可能不正确，请确认图片内容")
                     return
                 }
-                enhancementLevel.value = parseInt(gearInfo[0].replace("+", "")) // 强化等级 去掉 "+" 并转化为数字
+                enhancementLevel.value = parseInt(gearInfo[0].replace("+", ""), 10) || 0 // 强化等级 去掉 "+" 并转化为数字
                 part.value = gearInfo[1]
                 const mergedItem = []
                 mergedItem.push(gearInfo[2])
@@ -222,26 +226,49 @@ const queryResultListener = (event: any, result: { error?: any; data: any }) => 
 ipcRenderer.on('query-result', queryResultListener)
 
 const recommendGear = (heros: { data: any[] }) => {
-    console.log('Equipment attributes:', attribute.value)
+    const resultArray = attribute.value.map(item => item[0])
+    const isSpecialPart = ["项链", "戒指", "鞋子"].includes(part.value)
+    let primaryAttributeName = isSpecialPart ? translateStatName(primaryAttribute.value[0]) : ''
+
+    const uniqueAttributes = new Set(resultArray)
     // 计算每个英雄的优先级
-    const heroPriorities = heros.data.map(hero => {
+    const heroPriorities = heros.data.flatMap(hero => {
         let priority = 0
         let attributesArray: any[][] = []
-        attribute.value.forEach(([cnName, _]) => {
-            const engName = translateStatName(cnName) // 将中文属性名转换为英文
-            priority += hero[engName] || 0
-            attributesArray.push([cnName, hero[engName]]) // 将属性名和权重添加到数组中
+        let highWeightAttributesCount = 0 // 用于统计权重大于1的属性数量
+
+        uniqueAttributes.forEach(cnName => {
+            const engName = translateStatName(cnName)
+            const attributePriority = hero[engName] || 0
+            if (attributePriority > 1) {
+                highWeightAttributesCount++
+            }
+            attributesArray.push([cnName, attributePriority])
         })
-        return { heroCode: hero.heroCode, attributes: attributesArray, priority }
+
+        // 检查是否至少有三个属性的权重大于1
+        if (highWeightAttributesCount < 3) {
+            return [] // 条件不满足，跳过此英雄
+        }
+
+        if (isSpecialPart && primaryAttributeName) {
+            // 检查主属性优先级
+            const primaryAttributePriority = hero[primaryAttributeName] || 0
+            if (primaryAttributePriority <= 3) {
+                return [] // 主属性不满足条件，跳过此英雄
+            }
+        }
+
+        priority = attributesArray.reduce((total, [_, value]) => total + value, 0)
+        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate }]
     })
 
     // 过滤掉priority小于等于5的英雄
     const filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
 
     topHeroes.value = filteredHeroes.sort((a, b) => b.priority - a.priority)
-    // 输出结果
-    console.log('Top Heroes:', topHeroes.value)
 }
+
 
 
 
