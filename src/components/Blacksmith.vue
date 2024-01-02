@@ -49,10 +49,20 @@
                                     </el-col>
                                 </el-row>
                                 <el-descriptions :size="'small'" :column="1" class="hero-info">
+                                    <el-descriptions-item label="匹配度">
+                                        <el-tooltip class="box-item" effect="dark" :content="String(hero.matchDegree)"
+                                            placement="bottom">
+                                            <el-rate v-model="hero.matchDegree" disabled show-score text-color="#ff9900"
+                                                :size="'small'" score-template="" />
+                                        </el-tooltip>
+                                    </el-descriptions-item>
                                     <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
                                         :label="attribute[0]">
-                                        <el-rate v-model="attribute[1]" disabled show-score text-color="#ff9900"
-                                            :size="'small'" score-template="" />
+                                        <el-tooltip class="box-item" effect="dark" :content="String(attribute[1])"
+                                            placement="bottom">
+                                            <el-rate v-model="attribute[1]" disabled show-score text-color="#ff9900"
+                                                :size="'small'" score-template="" />
+                                        </el-tooltip>
                                     </el-descriptions-item>
                                 </el-descriptions>
                             </el-col>
@@ -95,6 +105,7 @@ interface Hero {
     rate: number
     avatar: string
     equipImages: EquipImage[]
+    matchDegree: number
 }
 interface EquipImage {
     equipCode: string // 装备编码
@@ -244,7 +255,6 @@ ipcRenderer.on('query-result', queryResultListener)
 const recommendGear = (heros: { data: any[] }) => {
     const resultArray = attribute.value
         .map(item => item[0]) // 获取 item[0] 的值
-        .filter(item => item !== '') // 使用 filter 去掉空字符串
     const isSpecialPart = ["项链", "戒指", "鞋子"].includes(part.value)
     let primaryAttributeName = isSpecialPart ? translateStatName(primaryAttribute.value[0]) : ''
 
@@ -254,7 +264,8 @@ const recommendGear = (heros: { data: any[] }) => {
         let priority = 0
         let attributesArray: any[][] = []
         let highWeightAttributesCount = 0 // 用于统计权重大于1的属性数量
-
+        let matchDegree = 0
+        let matchDegreeScore = 0
         uniqueAttributes.forEach(cnName => {
             const engName = translateStatName(cnName)
             const attributePriority = hero[engName] || 0
@@ -262,12 +273,11 @@ const recommendGear = (heros: { data: any[] }) => {
                 highWeightAttributesCount++
             }
             //因为暴击容易歪，不需要暴击的角色也会拥有部分暴击，提高对暴击的权重需求
-            if (engName === 'cri' && attributePriority >= 2) {
+            if (engName === 'cri' && attributePriority >= 1.5) {
                 highWeightAttributesCount++
             }
             attributesArray.push([cnName, attributePriority])
         })
-
         // 检查是否至少有三个属性的权重大于1
         if (highWeightAttributesCount < 3) {
             return [] // 条件不满足，跳过此英雄
@@ -280,7 +290,13 @@ const recommendGear = (heros: { data: any[] }) => {
                 return [] // 主属性不满足条件，跳过此英雄
             }
         }
-
+        attribute.value.forEach(attr => {
+            const engName = translateStatName(attr[0])
+            //计算分数x权重
+            matchDegreeScore += calculateScore([attr]) * hero[engName]
+        })
+        //计算匹配度
+        matchDegree = Math.round((matchDegreeScore / (score.value * 5)) * 5 * 100) / 100
         // 解析 "equip_list" 字段为数组
         const equipList = JSON.parse(hero.equip_list)
         // 遍历装备列表，为每个装备生成图片路径
@@ -293,14 +309,14 @@ const recommendGear = (heros: { data: any[] }) => {
         const imagePath = path.join('tiezhu:', process.cwd(), 'avatar', hero.heroCode + '.png')
 
         // 构建返回值对象，将解析后的 "equip_list" 添加到返回值中
-        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate, avatar: imagePath, equipImages }]
+        return [{ heroCode: hero.heroCode, attributes: attributesArray, priority, rate: hero.rate, avatar: imagePath, equipImages, matchDegree }]
     })
 
 
     // 过滤掉priority小于等于5的英雄
     const filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
 
-    topHeroes.value = filteredHeroes.sort((a, b) => b.priority - a.priority)
+    topHeroes.value = filteredHeroes.sort((a, b) => b.matchDegree - a.matchDegree)
 }
 
 
