@@ -272,7 +272,7 @@ const recommendGear = (heros: { data: any[] }) => {
         if (isSpecialPart && primaryAttributeName) {
             // 检查主属性优先级
             const primaryAttributePriority = hero[primaryAttributeName] || 0
-            if (primaryAttributePriority <= 3) {
+            if (primaryAttributePriority <= 2) {
                 return [] // 主属性不满足条件，跳过此英雄
             }
         }
