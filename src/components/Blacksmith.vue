@@ -258,7 +258,11 @@ const recommendGear = (heros: { data: any[] }) => {
         uniqueAttributes.forEach(cnName => {
             const engName = translateStatName(cnName)
             const attributePriority = hero[engName] || 0
-            if (attributePriority > 1) {
+            if (engName !== 'cri' && attributePriority > 1) {
+                highWeightAttributesCount++
+            }
+            //因为暴击容易歪，不需要暴击的角色也会拥有部分暴击，提高对暴击的权重需求
+            if (engName === 'cri' && attributePriority >= 2) {
                 highWeightAttributesCount++
             }
             attributesArray.push([cnName, attributePriority])
