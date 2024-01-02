@@ -10,25 +10,15 @@
                 <el-descriptions-item label="主属性">
                     {{ primaryAttribute[0] }} {{ primaryAttribute[1] }}
                 </el-descriptions-item>
-                <el-descriptions-item :label="attribute[0][0]">{{ attribute[0][1] }}</el-descriptions-item>
-                <el-descriptions-item :label="attribute[1][0]">{{ attribute[1][1] }}</el-descriptions-item>
-                <el-descriptions-item :label="attribute[2][0]">{{ attribute[2][1] }}</el-descriptions-item>
-                <el-descriptions-item :label="attribute[3][0]">{{ attribute[3][1] }}</el-descriptions-item>
+                <el-descriptions-item v-for="(item, index) in attribute" :key="index" :label="item[0]">
+                    {{ item[1] }}
+                </el-descriptions-item>
                 <el-descriptions-item label="套装">{{ set }}</el-descriptions-item>
                 <el-descriptions-item label="分数">{{ score }}</el-descriptions-item>
                 <el-descriptions-item label="预期分数">{{ expectantScore }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
         <el-col :span="14">
-            <!-- <el-row>
-                <el-col>
-                    <el-image v-if="src" :src="src">
-                        <template #placeholder>
-                            <div class="image-slot">Loading<span class="dot">...</span></div>
-                        </template>
-                    </el-image>
-                </el-col>
-            </el-row> -->
             <el-row v-if="enhancedRecommendation">
                 <el-col>
                     <el-text class="mx-1" size="large">强化建议：</el-text>
@@ -176,19 +166,9 @@ child.stdout.on('data', (data: Buffer) => {
         try {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
-                const gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
-                if (gearInfo[9] === '强化+12时获得') {
-                    // 删除下标为9的元素
-                    gearInfo.splice(9, 1)
-                    gearInfo.splice(9, 1)
-                    // 在下标9和10之间插入两个空字符串
-                    gearInfo.splice(9, 0, '', '')
-                }
-                if (gearInfo.length === 12) {
-                    // 在第一项添加 "+0"
-                    gearInfo.unshift("+0")
-                }
-                if (gearInfo.length !== 13) {
+                let gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.6).map((item: { text: string }) => item.text)
+
+                if (gearInfo.length < 8) {
                     ElMessage({
                         message: '数据可能不正确，请确认图片内容',
                         type: 'error',
@@ -196,26 +176,42 @@ child.stdout.on('data', (data: Buffer) => {
                     console.log("数据可能不正确，请确认图片内容")
                     return
                 }
-                enhancementLevel.value = parseInt(gearInfo[0].replace("+", ""), 10) || 0 // 强化等级 去掉 "+" 并转化为数字
-                part.value = gearInfo[1]
-                const mergedItem = []
-                mergedItem.push(gearInfo[2])
-                mergedItem.push(gearInfo[3])
-                primaryAttribute.value = mergedItem
-                const mergedItems = []
-                for (let i = 4; i < gearInfo.length; i += 2) {
-                    if (i + 1 < gearInfo.length) {
-                        const mergedArray = [gearInfo[i], gearInfo[i + 1]]
-                        mergedItems.push(mergedArray)
-                    }
+
+                //获取强化等级
+                if (gearInfo[0].includes('+')) {
+                    enhancementLevel.value = parseInt(gearInfo[0].slice(1))
+                    gearInfo.shift() // 移除数组的第一个元素
+                } else {
+                    enhancementLevel.value = 0
                 }
-                attribute.value = mergedItems as [string, string][]
-
-
-                const original_string = gearInfo[12]
-                const modified_string = original_string.replace("套", "").replace("装", "")
-                set.value = modified_string
+                // 获取装备级别和装备部位
+                let tier = gearInfo[0].slice(0, 2)
+                part.value = gearInfo[0].slice(2)
+                gearInfo.shift()
+                //获取主属性
+                primaryAttribute.value = gearInfo.slice(0, 2)
+                gearInfo.splice(0, 2)
+                //获取套装
+                let lastItem = gearInfo[gearInfo.length - 1]
+                const indexOfSuit = lastItem.indexOf("套")
+                if (indexOfSuit !== -1) {
+                    set.value = lastItem.slice(0, indexOfSuit)
+                }
+                gearInfo.pop()
+                //获取副属性
+                const enhancementIndex = gearInfo.indexOf("强化+12时获得")
+                if (enhancementIndex !== -1) {
+                    gearInfo = gearInfo.slice(0, enhancementIndex)
+                }
+                type AttributePair = [string, string]
+                let pairedAttributes: AttributePair[] = []
+                for (let i = 0; i < gearInfo.length; i += 2) {
+                    pairedAttributes.push([gearInfo[i], gearInfo[i + 1]])
+                }
+                attribute.value = pairedAttributes
+                //计算分数
                 score.value = calculateScore(attribute.value)
+                //装备推荐
                 enhancedRecommendation.value = calculateAnalysis()
                 expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
 
@@ -374,14 +370,13 @@ const getGearInfo = async () => {
     const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
     const blackOverlay = Buffer.from(
         `<svg width="435" height="500">
-                <rect x="0" y="0" width="80" height="60" fill="black" />
+                <rect x="0" y="0" width="85" height="60" fill="black" />
+                <rect x="55" y="32" width="80" height="20" fill="black" />
                 <rect x="0" y="380" width="435" height="60" fill="black" />
                 <rect x="0" y="50" width="435" height="110" fill="black" />
-                <rect x="132" y="20" width="50" height="50" fill="black" />
-                <rect x="0" y="160" width="50" height="60" fill="black" />
+                <rect x="0" y="160" width="45" height="60" fill="black" />
                 <rect x="0" y="210" width="435" height="30" fill="black" />
                 <rect x="0" y="440" width="60" height="60" fill="black" />
-                <rect x="165" y="440" width="80" height="60" fill="black" />
         </svg>`
     )
     await Sharp(path.join('temp', 'screenshot.png')) // 使用 path.join 拼接路径
