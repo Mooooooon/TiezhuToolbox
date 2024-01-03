@@ -105,6 +105,8 @@ const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
 const set = ref('')
 const uiIndex = ref('1')
+let configData = require(path.join(process.cwd(), 'tiezhu.config.json'))
+let tiezhuConfig = ref(configData)
 interface HeroAttribute {
     [index: number]: [string, number] // [属性名称, 属性值]
 }
@@ -159,6 +161,10 @@ const statsMapping: StatsMapping = {
 
 onMounted(() => {
     ElMessage('始化中……')
+    //重新加载配置文件
+    delete require.cache[require.resolve(path.join(process.cwd(), 'tiezhu.config.json'))]
+    configData = require(path.join(process.cwd(), 'tiezhu.config.json'))
+    tiezhuConfig.value = configData
 })
 const child = spawn(path.join(process.cwd(), 'PaddleOCR-json', 'PaddleOCR-json.exe'), {
     cwd: path.join(process.cwd(), 'PaddleOCR-json'),
@@ -333,8 +339,8 @@ const recommendGear = (heros: { data: any[] }) => {
 
 
     // 过滤掉priority小于等于5和匹配度小于3的英雄
-    let filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
-    filteredHeroes = heroPriorities.filter(hero => hero.matchDegree >= 3)
+    let filteredHeroes = heroPriorities.filter(hero => hero.priority > tiezhuConfig.value.hero.priority)
+    filteredHeroes = heroPriorities.filter(hero => hero.matchDegree >= tiezhuConfig.value.hero.matchDegree)
 
     topHeroes.value = filteredHeroes.sort((a, b) => b.matchDegree - a.matchDegree)
 }
@@ -498,25 +504,29 @@ const calculateScore = (attribute: [string, string][]): number => {
 }
 
 const calculateAnalysis = () => {
+    const leftScore = tiezhuConfig.value.scoreThreshold.left
+    const rightScore = tiezhuConfig.value.scoreThreshold.right
+    console.log(rightScore)
+
     if (["武器", "铠甲", "头盔"].includes(part.value)) {
-        if (enhancementLevel.value < 3 && score.value >= 22) return "继续强化"
-        else if (enhancementLevel.value < 6 && score.value >= 28) return "继续强化"
-        else if (enhancementLevel.value < 9 && score.value >= 34) return "继续强化"
-        else if (enhancementLevel.value < 12 && score.value >= 40) return "继续强化"
-        else if (enhancementLevel.value < 15 && score.value >= 46) return "继续强化"
-        else if (enhancementLevel.value == 15 && score.value >= 52) return "建议重铸"
+        if (enhancementLevel.value < 3 && score.value >= leftScore) return "继续强化"
+        else if (enhancementLevel.value < 6 && score.value >= leftScore + 6) return "继续强化"
+        else if (enhancementLevel.value < 9 && score.value >= leftScore + 12) return "继续强化"
+        else if (enhancementLevel.value < 12 && score.value >= leftScore + 18) return "继续强化"
+        else if (enhancementLevel.value < 15 && score.value >= leftScore + 24) return "继续强化"
+        else if (enhancementLevel.value == 15 && score.value >= leftScore + 30) return "建议重铸"
         else return "分数过低，建议放弃"
     } else {
         if (["攻击力", "防御力", "生命值"].includes(primaryAttribute.value[0]) && !primaryAttribute.value[1].includes('%')) {
             return "固定值主属性，建议放弃"
         }
         else {
-            if (enhancementLevel.value < 3 && score.value >= 20) return "继续强化"
-            else if (enhancementLevel.value < 6 && score.value >= 26) return "继续强化"
-            else if (enhancementLevel.value < 9 && score.value >= 32) return "继续强化"
-            else if (enhancementLevel.value < 12 && score.value >= 38) return "继续强化"
-            else if (enhancementLevel.value < 15 && score.value >= 44) return "继续强化"
-            else if (enhancementLevel.value == 15 && score.value >= 50) return "建议重铸"
+            if (enhancementLevel.value < 3 && score.value >= rightScore) return "继续强化"
+            else if (enhancementLevel.value < 6 && score.value >= rightScore + 6) return "继续强化"
+            else if (enhancementLevel.value < 9 && score.value >= rightScore + 12) return "继续强化"
+            else if (enhancementLevel.value < 12 && score.value >= rightScore + 18) return "继续强化"
+            else if (enhancementLevel.value < 15 && score.value >= rightScore + 24) return "继续强化"
+            else if (enhancementLevel.value == 15 && score.value >= rightScore + 30) return "建议重铸"
             else return "分数过低，建议放弃"
         }
     }

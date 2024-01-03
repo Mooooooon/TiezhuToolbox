@@ -47,7 +47,8 @@
     "./platform-tools/",
     "./PaddleOCR-json/",
     "./avatar/",
-    "./heroes.db"
+    "./heroes.db",
+    "./tiezhu.config.json"
   ],
   "asar": true,
   "asarUnpack": [ 
