@@ -55,6 +55,7 @@ import { ElMessage } from 'element-plus'
 import { exec } from 'child_process'
 import { useAdbStore } from '../store/adb'
 import path from 'path'
+const axios = require('axios')
 
 const adbStore = useAdbStore()
 const value = ref(adbStore.device)
@@ -144,6 +145,16 @@ const connectADB = () => {
                     adbStore.device = options.value[0].value
                     console.log('自动选择的设备:', adbStore.device)
                 }
+
+                //检查adb位置
+                exec("wmic process where \"name='adb.exe'\" get ExecutablePath", (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`检查adb位置 执行的错误: ${error}`)
+                        return
+                    }
+                    console.log(`检查adb位置 标准输出: ${stdout}`)
+                    // 解析 stdout 来找到您需要的信息
+                })
             })
         } else {
             ElMessage.error('模拟器连接失败。')
@@ -159,7 +170,28 @@ onMounted(() => {
     names.value = loadAll()
     state.value = adbStore.port
     options.value = adbStore.deviceList
+    checkForUpdates()
 })
+
+async function checkForUpdates() {
+    try {
+        const response = await axios.get('https://api.github.com/repos/Mooooooon/TiezhuToolbox/releases/latest')
+        const latestVersion = response.data.tag_name
+
+        // 比较最新版本和当前版本
+        if (latestVersion !== '1.0.1') {
+            // 有更新
+            ElMessage({
+                message: '程序有更新!请去Github或nga下载',
+                type: 'success',
+            })
+        } else {
+            // 那没事了
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
 </script>
   
 <style>
