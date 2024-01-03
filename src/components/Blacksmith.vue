@@ -296,7 +296,13 @@ const recommendGear = (heros: { data: any[] }) => {
             matchDegreeScore += calculateScore([attr]) * hero[engName]
         })
         //计算匹配度
-        matchDegree = Math.round((matchDegreeScore / (score.value * 5)) * 5 * 100) / 100
+        const tempData = { ...hero }
+        delete tempData['heroCode']
+        delete tempData['rate']
+        delete tempData['equip_list']
+        const values = Object.values(tempData).map(value => value as number)
+        const maxValue = Math.max(...values)
+        matchDegree = Math.round((matchDegreeScore / (score.value * maxValue)) * 5 * 100) / 100
         // 解析 "equip_list" 字段为数组
         const equipList = JSON.parse(hero.equip_list)
         // 遍历装备列表，为每个装备生成图片路径
