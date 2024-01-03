@@ -33,7 +33,7 @@
                 <el-text>输入端口号后连接模拟器 默认端口号不一定对请自己查看</el-text>
             </el-row>
             <el-row>
-                <el-text>以85红装为基础制作 其他等级仅供参考</el-text>
+                <el-text>以</el-text><el-text type="danger">85红装</el-text><el-text>为基础制作 其他等级仅供参考</el-text>
             </el-row>
             <el-row>
                 <el-text>不考虑纯速度装 纯速度装请自行斟酌</el-text>
@@ -42,8 +42,15 @@
                 <el-text>+6成本较低 +3后不推荐的装备也可以考虑强化</el-text>
             </el-row>
             <el-row>
+                <el-text>项链暴击爆伤赚分 鞋子速度赚分 其他亏分请自行斟酌！</el-text>
+            </el-row>
+            <el-row>
                 <el-link href="https://github.com/Mooooooon/TiezhuToolbox" type="primary" target="_blank">Github</el-link>
                 <el-text>👈给我点个Star吧⭐</el-text>
+            </el-row>
+            <el-row>
+                <el-link href="https://nga.178.com/read.php?tid=38731315" type="primary" target="_blank">NGA </el-link>
+                <el-text>👈Bug反馈点此</el-text>
             </el-row>
         </el-col>
     </el-row>
