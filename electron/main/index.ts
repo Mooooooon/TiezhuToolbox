@@ -58,6 +58,7 @@ async function createWindow() {
       // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
       nodeIntegration: true,
       contextIsolation: false,
+      scrollBounce: false //禁止滚动条！
     },
   })
 

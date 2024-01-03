@@ -1,8 +1,17 @@
 <template>
     <el-row>
         <el-col :span="10">
-            <el-button @click="takeScreenshot">截图</el-button>
-            <el-text class="mx-1"> 请打开强化装备界面</el-text>
+            <el-row>
+                <el-col :span="6">
+                    <el-button @click="takeScreenshot">截图</el-button>
+                </el-col>
+                <el-col :span="18">
+                    <el-radio-group v-model="uiIndex">
+                        <el-radio-button label="1">强化</el-radio-button>
+                        <el-radio-button label="2">背包</el-radio-button>
+                    </el-radio-group>
+                </el-col>
+            </el-row>
             <el-descriptions v-if="enhancedRecommendation" class="gear-info" title="装备信息" :column="1">
                 <el-descriptions-item label="强化等级">
                     {{ enhancementLevel !== undefined ? '+' + enhancementLevel : '' }}
@@ -51,7 +60,7 @@
                                 <el-descriptions :size="'small'" :column="1" class="hero-info">
                                     <el-descriptions-item label="匹配度">
                                         <el-tooltip class="box-item" effect="dark" :content="String(hero.matchDegree)"
-                                            placement="bottom">
+                                            placement="bottom" :hide-after="0">
                                             <el-rate v-model="hero.matchDegree" disabled show-score text-color="#ff9900"
                                                 :size="'small'" score-template="" />
                                         </el-tooltip>
@@ -59,7 +68,7 @@
                                     <el-descriptions-item v-for="(attribute, index) in hero.attributes" :key="index"
                                         :label="attribute[0]">
                                         <el-tooltip class="box-item" effect="dark" :content="String(attribute[1])"
-                                            placement="bottom">
+                                            placement="bottom" :hide-after="0">
                                             <el-rate v-model="attribute[1]" disabled show-score text-color="#ff9900"
                                                 :size="'small'" score-template="" />
                                         </el-tooltip>
@@ -95,6 +104,7 @@ const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
 const set = ref('')
+const uiIndex = ref('1')
 interface HeroAttribute {
     [index: number]: [string, number] // [属性名称, 属性值]
 }
@@ -217,7 +227,10 @@ child.stdout.on('data', (data: Buffer) => {
                 type AttributePair = [string, string]
                 let pairedAttributes: AttributePair[] = []
                 for (let i = 0; i < gearInfo.length; i += 2) {
-                    pairedAttributes.push([gearInfo[i], gearInfo[i + 1]])
+                    // 使用正则表达式匹配并保留中文字符 防止识别到重铸标志
+                    const matchedChinese = gearInfo[i].match(/[\u4e00-\u9fa5]/g)
+                    const chineseOnly = matchedChinese ? matchedChinese.join('') : ''
+                    pairedAttributes.push([chineseOnly, gearInfo[i + 1]])
                 }
                 attribute.value = pairedAttributes
                 //计算分数
@@ -319,8 +332,9 @@ const recommendGear = (heros: { data: any[] }) => {
     })
 
 
-    // 过滤掉priority小于等于5的英雄
-    const filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
+    // 过滤掉priority小于等于5和匹配度小于3的英雄
+    let filteredHeroes = heroPriorities.filter(hero => hero.priority > 5)
+    filteredHeroes = heroPriorities.filter(hero => hero.matchDegree >= 3)
 
     topHeroes.value = filteredHeroes.sort((a, b) => b.matchDegree - a.matchDegree)
 }
@@ -393,9 +407,12 @@ const textOcr = async (imagePath: string): Promise<any> => {
 //获取装备信息
 const getGearInfo = async () => {
     const processedImagePath = path.join('temp', 'gear_info.png') // 使用 path.join 拼接路径
-    const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
-    const blackOverlay = Buffer.from(
-        `<svg width="435" height="500">
+
+    //判断ui位置
+    if (uiIndex.value === '1') {
+        const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
+        const blackOverlay = Buffer.from(
+            `<svg width="435" height="500">
                 <rect x="0" y="0" width="85" height="60" fill="black" />
                 <rect x="55" y="32" width="80" height="20" fill="black" />
                 <rect x="0" y="380" width="435" height="60" fill="black" />
@@ -404,13 +421,36 @@ const getGearInfo = async () => {
                 <rect x="0" y="210" width="435" height="30" fill="black" />
                 <rect x="0" y="440" width="60" height="60" fill="black" />
         </svg>`
-    )
-    await Sharp(path.join('temp', 'screenshot.png')) // 使用 path.join 拼接路径
-        .resize(1600, 900)
-        .extract(cropOptions)
-        .composite([{ input: blackOverlay, top: 0, left: 0 }])
-        .toFile(processedImagePath)
-    await textOcr(processedImagePath)
+        )
+        await Sharp(path.join('temp', 'screenshot.png')) // 使用 path.join 拼接路径
+            .resize(1600, 900)
+            .extract(cropOptions)
+            .composite([{ input: blackOverlay, top: 0, left: 0 }])
+            .toFile(processedImagePath)
+        await textOcr(processedImagePath)
+        return
+    } else {
+        const cropOptions = { left: 415, top: 137, width: 370, height: 550 }
+        const blackOverlay = Buffer.from(
+            `<svg width="370" height="550">
+                <rect x="0" y="0" width="85" height="60" fill="black" />
+                <rect x="55" y="32" width="80" height="20" fill="black" />
+                <rect x="0" y="440" width="370" height="60" fill="black" />
+                <rect x="0" y="50" width="370" height="200" fill="black" />
+                <rect x="0" y="250" width="45" height="60" fill="black" />
+                <rect x="0" y="290" width="435" height="30" fill="black" />
+                <rect x="0" y="490" width="60" height="60" fill="black" />
+        </svg>`
+        )
+        await Sharp(path.join('temp', 'screenshot.png')) // 使用 path.join 拼接路径
+            .resize(1600, 900)
+            .extract(cropOptions)
+            .composite([{ input: blackOverlay, top: 0, left: 0 }])
+            .toFile(processedImagePath)
+        await textOcr(processedImagePath)
+        return
+    }
+
 }
 
 const calculateScore = (attribute: [string, string][]): number => {
