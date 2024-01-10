@@ -506,7 +506,6 @@ const calculateScore = (attribute: [string, string][]): number => {
 const calculateAnalysis = () => {
     const leftScore = tiezhuConfig.value.scoreThreshold.left
     const rightScore = tiezhuConfig.value.scoreThreshold.right
-    console.log(rightScore)
 
     if (["武器", "铠甲", "头盔"].includes(part.value)) {
         if (enhancementLevel.value < 3 && score.value >= leftScore) return "继续强化"
