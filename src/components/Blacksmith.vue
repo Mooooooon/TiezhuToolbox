@@ -514,7 +514,21 @@ const calculateAnalysis = () => {
         else if (enhancementLevel.value < 12 && score.value >= leftScore + 18) return "继续强化"
         else if (enhancementLevel.value < 15 && score.value >= leftScore + 24) return "继续强化"
         else if (enhancementLevel.value == 15 && score.value >= leftScore + 30) return "建议重铸"
-        else return "分数过低，建议放弃"
+        else {
+            let speed = 0
+            for (let [name, value] of attribute.value) {
+                if (name == "速度") {
+                    speed = parseInt(value)
+                }
+            }
+            if (enhancementLevel.value < 3 && speed >= 3) return "继续赌速度"
+            else if (enhancementLevel.value < 6 && speed >= 6) return "继续赌速度"
+            else if (enhancementLevel.value < 9 && speed >= 9) return "继续赌速度"
+            else if (enhancementLevel.value < 12 && speed >= 12) return "继续赌速度"
+            else if (enhancementLevel.value < 15 && speed >= 12) return "继续赌速度"
+            else if (enhancementLevel.value == 15 && speed >= 15) return "建议重铸"
+            else return "分数过低，建议放弃"
+        }
     } else {
         if (["攻击力", "防御力", "生命值"].includes(primaryAttribute.value[0]) && !primaryAttribute.value[1].includes('%')) {
             return "固定值主属性，建议放弃"
@@ -526,6 +540,21 @@ const calculateAnalysis = () => {
             else if (enhancementLevel.value < 12 && score.value >= rightScore + 18) return "继续强化"
             else if (enhancementLevel.value < 15 && score.value >= rightScore + 24) return "继续强化"
             else if (enhancementLevel.value == 15 && score.value >= rightScore + 30) return "建议重铸"
+            if (["项链", "戒指"].includes(part.value)) {
+                let speed = 0
+                for (let [name, value] of attribute.value) {
+                    if (name == "速度") {
+                        speed = parseInt(value)
+                    }
+                }
+                if (enhancementLevel.value < 3 && speed >= 3) return "继续赌速度"
+                else if (enhancementLevel.value < 6 && speed >= 6) return "继续赌速度"
+                else if (enhancementLevel.value < 9 && speed >= 9) return "继续赌速度"
+                else if (enhancementLevel.value < 12 && speed >= 12) return "继续赌速度"
+                else if (enhancementLevel.value < 15 && speed >= 12) return "继续赌速度"
+                else if (enhancementLevel.value == 15 && speed >= 15) return "建议重铸"
+                else return "分数过低，建议放弃"
+            }
             else return "分数过低，建议放弃"
         }
     }
