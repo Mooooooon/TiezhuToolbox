@@ -191,7 +191,7 @@ async function checkForUpdates() {
         const latestVersion = response.data.tag_name
 
         // 比较最新版本和当前版本
-        if (latestVersion !== '1.0.1') {
+        if (latestVersion !== '1.0.2') {
             // 有更新
             ElMessage({
                 message: '程序有更新!请去Github或nga下载',
