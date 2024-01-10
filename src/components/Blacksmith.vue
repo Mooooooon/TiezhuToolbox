@@ -193,7 +193,7 @@ child.stdout.on('data', (data: Buffer) => {
         try {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
-                let gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.6).map((item: { text: string }) => item.text)
+                let gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
 
                 if (gearInfo.length < 8) {
                     ElMessage({
