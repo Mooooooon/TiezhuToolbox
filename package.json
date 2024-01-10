@@ -1,6 +1,6 @@
 {
   "name": "tiezhu-toolbox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist-electron/main/index.js",
   "description": "你的E7助手!",
   "author": "李铁柱",
