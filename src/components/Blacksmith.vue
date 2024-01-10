@@ -5,11 +5,14 @@
                 <el-col :span="6">
                     <el-button @click="takeScreenshot">截图</el-button>
                 </el-col>
-                <el-col :span="18">
+                <el-col :span="10">
                     <el-radio-group v-model="uiIndex">
                         <el-radio-button label="1">强化</el-radio-button>
                         <el-radio-button label="2">背包</el-radio-button>
                     </el-radio-group>
+                </el-col>
+                <el-col :span="8">
+                    <el-switch v-model="autoSwich" inline-prompt active-text="自动切换" inactive-text="关闭自动" />
                 </el-col>
             </el-row>
             <el-descriptions v-if="enhancedRecommendation" class="gear-info" title="装备信息" :column="1">
@@ -105,6 +108,7 @@ const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
 const set = ref('')
 const uiIndex = ref('1')
+const autoSwich = ref(true)
 let configData = require(path.join(process.cwd(), 'tiezhu.config.json'))
 let tiezhuConfig = ref(configData)
 interface HeroAttribute {
@@ -190,31 +194,40 @@ child.stdout.on('data', (data: Buffer) => {
     } else if (strOut.includes('PaddleOCR-json v1.3.0')) {
         console.log(strOut)
     } else {
+        console.log(strOut)
         try {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
                 let gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
-
+                console.log(gearInfo)
                 if (gearInfo.length < 8) {
-                    ElMessage({
-                        message: '数据可能不正确，请确认图片内容',
-                        type: 'error',
-                    })
-                    console.log("数据可能不正确，请确认图片内容")
+                    if (autoSwich.value !== true) {
+                        ElMessage({
+                            message: '数据可能不正确，请确认图片内容',
+                            type: 'error',
+                        })
+                        console.log("数据可能不正确，请确认图片内容")
+                    }
                     return
                 }
 
                 //获取强化等级
-                if (gearInfo[0].includes('+')) {
-                    enhancementLevel.value = parseInt(gearInfo[0].slice(1))
+                const matchResult = gearInfo[0].match(/\d+/)
+                if (matchResult) {
+                    enhancementLevel.value = parseInt(matchResult[0])
                     gearInfo.shift() // 移除数组的第一个元素
                 } else {
                     enhancementLevel.value = 0
                 }
                 // 获取装备级别和装备部位
-                let tier = gearInfo[0].slice(0, 2)
+                // let tier = gearInfo[0].slice(0, 2) 暂时用不到
                 part.value = gearInfo[0].slice(2)
                 gearInfo.shift()
+                //是否自动切换
+                const isPart = ["项链", "戒指", "鞋子", "武器", "头盔", "铠甲"].includes(part.value)
+                if (autoSwich.value === true && !isPart) {
+                    return
+                }
                 //获取主属性
                 primaryAttribute.value = gearInfo.slice(0, 2)
                 gearInfo.splice(0, 2)
@@ -415,7 +428,7 @@ const getGearInfo = async () => {
     const processedImagePath = path.join('temp', 'gear_info.png') // 使用 path.join 拼接路径
 
     //判断ui位置
-    if (uiIndex.value === '1') {
+    if (uiIndex.value === '1' || autoSwich.value === true) {
         const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
         const blackOverlay = Buffer.from(
             `<svg width="435" height="500">
@@ -434,8 +447,8 @@ const getGearInfo = async () => {
             .composite([{ input: blackOverlay, top: 0, left: 0 }])
             .toFile(processedImagePath)
         await textOcr(processedImagePath)
-        return
-    } else {
+    }
+    if (uiIndex.value === '2' || autoSwich.value === true) {
         const cropOptions = { left: 415, top: 137, width: 370, height: 550 }
         const blackOverlay = Buffer.from(
             `<svg width="370" height="550">
@@ -454,9 +467,7 @@ const getGearInfo = async () => {
             .composite([{ input: blackOverlay, top: 0, left: 0 }])
             .toFile(processedImagePath)
         await textOcr(processedImagePath)
-        return
     }
-
 }
 
 const calculateScore = (attribute: [string, string][]): number => {
