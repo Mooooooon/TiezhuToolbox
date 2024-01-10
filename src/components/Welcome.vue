@@ -33,10 +33,13 @@
                 <el-text>输入端口号后连接模拟器 默认端口号不一定对请自己查看</el-text>
             </el-row>
             <el-row>
+                <el-text type="danger">可以自己输入！默认没有不代表不支持！请自己百度！</el-text>
+            </el-row>
+            <el-row>
                 <el-text>以</el-text><el-text type="danger">85红装</el-text><el-text>为基础制作 其他等级仅供参考</el-text>
             </el-row>
             <el-row>
-                <el-text>不考虑纯速度装 纯速度装请自行斟酌</el-text>
+                <el-text>纯速度装请自行斟酌</el-text>
             </el-row>
             <el-row>
                 <el-text>+6成本较低 +3后不推荐的装备也可以考虑强化</el-text>
@@ -50,7 +53,7 @@
             </el-row>
             <el-row>
                 <el-link href="https://nga.178.com/read.php?tid=38731315" type="primary" target="_blank">NGA </el-link>
-                <el-text>👈Bug反馈点此</el-text>
+                <el-text>👈Bug反馈点此(或者去Github提issue)</el-text>
             </el-row>
         </el-col>
     </el-row>
@@ -92,10 +95,12 @@ const createFilter = (queryString: string) => {
 const loadAll = () => {
     return [
         { value: '62001', name: '夜神模拟器' },
+        { value: '21503', name: '逍遥模拟器' },
         { value: '16384', name: 'MuMu模拟器 12' },
         { value: '7555', name: 'MuMu模拟器 6' },
         { value: '6555', name: '天天模拟器' },
         { value: '5555', name: 'BlueStacks' },
+        { value: '5555', name: '雷电模拟器' },
     ]
 }
 const handleSelect = (item: NameItem) => {
