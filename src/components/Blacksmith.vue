@@ -194,12 +194,10 @@ child.stdout.on('data', (data: Buffer) => {
     } else if (strOut.includes('PaddleOCR-json v1.3.0')) {
         console.log(strOut)
     } else {
-        console.log(strOut)
         try {
             let jsonOutput = JSON.parse(strOut)
             if (jsonOutput.code === 100) {
                 let gearInfo = jsonOutput.data.filter((item: { score: number }) => item.score >= 0.5).map((item: { text: string }) => item.text)
-                console.log(gearInfo)
                 if (gearInfo.length < 8) {
                     if (autoSwich.value !== true) {
                         ElMessage({

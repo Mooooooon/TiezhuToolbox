@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AutoEquip: typeof import('./src/components/AutoEquip.vue')['default']
     Blacksmith: typeof import('./src/components/Blacksmith.vue')['default']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']

@@ -14,6 +14,7 @@
             <div>加载中...</div>
           </template>
         </Suspense>
+        <AutoEquip v-if="menuStore.menuIndex === '3'" />
       </el-main>
       <el-footer class="toolbox-footer">
         <Footer></Footer>
@@ -27,6 +28,7 @@ import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
 import Welcome from './components/Welcome.vue'
 import Blacksmith from './components/Blacksmith.vue'
+import AutoEquip from './components/AutoEquip.vue'
 import { useMenuStore } from './store/menu'
 
 const menuStore = useMenuStore()
