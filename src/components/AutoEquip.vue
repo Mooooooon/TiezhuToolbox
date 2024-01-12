@@ -1,6 +1,6 @@
 <template>
     <el-row>
-        <el-col :span="12">
+        <el-col :span="12" style="padding-right: 10px;">
             <el-row>
                 <el-col>
                     <el-upload class="upload-geer" drag ref="upload" :auto-upload="false" :on-exceed="handleExceed"
@@ -15,6 +15,15 @@
             <el-row>
                 <el-col>
                     <el-button @click="autoEquipStart">开始换装</el-button>
+                </el-col>
+            </el-row>
+        </el-col>
+        <el-col :span="12" style="padding-left: 10px;">
+            <el-row>
+                <el-col>
+                    <el-table :data="heroList" stripe style="width: 100%;" height="380">
+                        <el-table-column prop="name" label="英雄" />
+                    </el-table>
                 </el-col>
             </el-row>
         </el-col>
@@ -36,6 +45,7 @@ const axios = require('axios')
 const upload = ref<UploadInstance>()
 const adbStore = useAdbStore()
 const geerFilePath = ref<string>()
+const heroList = ref()
 
 //选中文件后清空之前选择的文件
 const handleExceed: UploadProps['onExceed'] = (files) => {
@@ -58,13 +68,13 @@ const autoEquipStart = () => {
         activeElement.blur()
     }
     //判断连接状态
-    if (adbStore.status === 0) {
-        ElMessage({
-            message: '尚未连接',
-            type: 'error',
-        })
-        return
-    }
+    // if (adbStore.status === 0) {
+    //     ElMessage({
+    //         message: '尚未连接',
+    //         type: 'error',
+    //     })
+    //     return
+    // }
     //判断文件状态
     if (!geerFilePath.value) {
         ElMessage({
@@ -88,8 +98,25 @@ const autoEquipStart = () => {
 
         //过滤没穿装备的角色
         const filteredHeroes = jsonData.heroes.filter((hero: { equipment: {} }) => Object.keys(hero.equipment).length > 0)
-        console.log(filteredHeroes)
 
+        // 读取本地JSON文件
+        const jsonFilePath = path.join(process.cwd(), 'name_mapping_result.json')
+        const jsonFile = fs.readFileSync(jsonFilePath, 'utf-8')
+        const nameMapping = JSON.parse(jsonFile)
+
+        // 汉化数组中的名字
+        const translatedArray = filteredHeroes.map((item: { name: any }) => {
+            const englishName = item.name
+            const chineseName = nameMapping[englishName] || englishName // 如果找不到对应的中文名字，则使用原始英文名字
+
+            // 保留其他字段，仅替换name字段
+            return {
+                ...item,
+                name: chineseName
+            }
+        })
+        heroList.value = translatedArray
+        console.log(translatedArray) // 打印汉化后的数组
     })
 }
 
