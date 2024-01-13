@@ -28,6 +28,7 @@
                 <el-descriptions-item label="套装">{{ set }}</el-descriptions-item>
                 <el-descriptions-item label="分数">{{ score }}</el-descriptions-item>
                 <el-descriptions-item label="预期分数">{{ expectantScore }}</el-descriptions-item>
+                <el-descriptions-item label="最高分数">{{ maxScore }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
         <el-col :span="14">
@@ -106,6 +107,7 @@ const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""
 const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
+const maxScore = ref(0)
 const set = ref('')
 const uiIndex = ref('1')
 const autoSwich = ref(true)
@@ -254,8 +256,9 @@ child.stdout.on('data', (data: Buffer) => {
                 score.value = calculateScore(attribute.value)
                 //装备推荐
                 enhancedRecommendation.value = calculateAnalysis()
-                expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
-
+                expectantScore.value = parseFloat((calculateExpectantScore() + score.value).toFixed(2))
+                maxScore.value = parseFloat((calculateMaxScore() + score.value).toFixed(2))
+                
                 ipcRenderer.send('query-database', translateSetName(set.value))
             } else {
                 if (jsonOutput.code === 101) {
@@ -569,7 +572,7 @@ const calculateAnalysis = () => {
     }
 }
 
-const expectant = (): number => {
+const calculateExpectantScore = (): number => {
     let expectant = 0
     for (let [name, value] of attribute.value) {
         switch (name) {
@@ -616,6 +619,45 @@ const expectant = (): number => {
     return expectant / 4 * Math.floor((17 - enhancementLevel.value) / 3)
 }
 
+const calculateMaxScore = (): number => {
+    let score = 0
+    for (let [name, value] of attribute.value) {
+        switch (name) {
+            case "攻击力":
+                if (value.includes("%")) {
+                    score = 8
+                } else {
+                    score = 46 * 3.46 / 39
+                }
+                break
+            case "防御力":
+                if (value.includes("%")) {
+                    score = 8
+                } else {
+                    score = 35 * 4.99 / 31
+                }
+                break
+            case "生命值":
+                if (value.includes("%")) {
+                    score = 8
+                } else {
+                    score = 202 * 3.09 / 174
+                }
+                break
+            case "效果命中":
+            case "效果抗性":
+            case "速度":
+            case "暴击伤害":
+            case "暴击率":
+                score = 8
+                break
+        }
+    }
+    return score * Math.floor((17 - enhancementLevel.value) / 3)
+}
+
+
+    
 onUnmounted(() => {
     //停止监听
     ipcRenderer.removeListener('query-result', queryResultListener)
