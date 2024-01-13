@@ -501,10 +501,10 @@ const calculateScore = (attribute: [string, string][]): number => {
                 score += parseFloat(value) * 2
                 break
             case "暴击伤害":
-                score += parseFloat(value.replace('%', '')) * 1.125
+                score += parseFloat(value.replace('%', '')) * 1.14
                 break
             case "暴击率":
-                score += parseFloat(value.replace('%', '')) * 1.5
+                score += parseFloat(value.replace('%', '')) * 1.6
                 break
         }
     }
@@ -603,12 +603,12 @@ const expectant = (): number => {
                 break
             case "暴击伤害":
                 if (value.includes("%")) {
-                    expectant += (4 + 7) / 2 * 1.125
+                    expectant += (4 + 7) / 2 * 1.143
                 }
                 break
             case "暴击率":
                 if (value.includes("%")) {
-                    expectant += (3 + 5) / 2 * 1.5
+                    expectant += (3 + 5) / 2 * 1.6
                 }
                 break
         }
