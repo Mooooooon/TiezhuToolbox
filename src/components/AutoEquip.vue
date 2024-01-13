@@ -58,6 +58,38 @@ const handleExceed: UploadProps['onExceed'] = (files) => {
 const handleChange: UploadProps['onChange'] = (uploadFile) => {
     if (uploadFile.raw) {
         geerFilePath.value = uploadFile.raw.path
+        //读取文件
+        fs.readFile(path.resolve(geerFilePath.value), { encoding: 'utf8' }, (err: any, data: string) => {
+            if (err) {
+                console.error('读取文件时发生错误:', err)
+                return
+            }
+
+            // 将 JSON 字符串解析为 JavaScript 对象
+            const jsonData = JSON.parse(data)
+
+            //过滤没穿装备的角色
+            const filteredHeroes = jsonData.heroes.filter((hero: { equipment: {} }) => Object.keys(hero.equipment).length > 0)
+
+            // 读取本地JSON文件
+            const jsonFilePath = path.join(process.cwd(), 'name_mapping_result.json')
+            const jsonFile = fs.readFileSync(jsonFilePath, 'utf-8')
+            const nameMapping = JSON.parse(jsonFile)
+
+            // 汉化数组中的名字
+            const translatedArray = filteredHeroes.map((item: { name: any }) => {
+                const englishName = item.name
+                const chineseName = nameMapping[englishName] || englishName // 如果找不到对应的中文名字，则使用原始英文名字
+
+                // 保留其他字段，仅替换name字段
+                return {
+                    ...item,
+                    name: chineseName
+                }
+            })
+            heroList.value = translatedArray
+            console.log(translatedArray) // 打印汉化后的数组
+        })
     }
 }
 
@@ -83,41 +115,6 @@ const autoEquipStart = () => {
         })
         return
     }
-    //读取文件
-    fs.readFile(path.resolve(geerFilePath.value), { encoding: 'utf8' }, (err: any, data: string) => {
-        if (err) {
-            console.error('读取文件时发生错误:', err)
-            return
-        }
-
-        // 将 JSON 字符串解析为 JavaScript 对象
-        const jsonData = JSON.parse(data)
-
-        // 现在你可以在代码中使用 jsonData 了
-        console.log('解析后的 JSON 数据:', jsonData)
-
-        //过滤没穿装备的角色
-        const filteredHeroes = jsonData.heroes.filter((hero: { equipment: {} }) => Object.keys(hero.equipment).length > 0)
-
-        // 读取本地JSON文件
-        const jsonFilePath = path.join(process.cwd(), 'name_mapping_result.json')
-        const jsonFile = fs.readFileSync(jsonFilePath, 'utf-8')
-        const nameMapping = JSON.parse(jsonFile)
-
-        // 汉化数组中的名字
-        const translatedArray = filteredHeroes.map((item: { name: any }) => {
-            const englishName = item.name
-            const chineseName = nameMapping[englishName] || englishName // 如果找不到对应的中文名字，则使用原始英文名字
-
-            // 保留其他字段，仅替换name字段
-            return {
-                ...item,
-                name: chineseName
-            }
-        })
-        heroList.value = translatedArray
-        console.log(translatedArray) // 打印汉化后的数组
-    })
 }
 
 onMounted(() => {
