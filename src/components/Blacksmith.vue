@@ -452,10 +452,9 @@ const getGearInfo = async () => {
             `<svg width="370" height="550">
                 <rect x="0" y="0" width="85" height="60" fill="black" />
                 <rect x="55" y="32" width="80" height="20" fill="black" />
-                <rect x="0" y="440" width="370" height="60" fill="black" />
+                <rect x="0" y="460" width="370" height="40" fill="black" />
                 <rect x="0" y="50" width="370" height="200" fill="black" />
-                <rect x="0" y="250" width="45" height="60" fill="black" />
-                <rect x="0" y="290" width="435" height="30" fill="black" />
+                <rect x="0" y="250" width="45" height="45" fill="black" />
                 <rect x="0" y="490" width="60" height="60" fill="black" />
         </svg>`
         )
