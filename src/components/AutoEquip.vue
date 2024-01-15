@@ -4,25 +4,31 @@
             <el-row>
                 <el-col>
                     <el-upload class="upload-geer" drag ref="upload" :auto-upload="false" :on-exceed="handleExceed"
-                        :on-change="handleChange" :limit="1">
+                        :on-change="handleChange" :limit="1" :show-file-list="false">
                         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                         <div class="el-upload__text">
-                            将文件拖放至此处或 <em>点击上传</em>
+                            将文件拖放至此处或点击此处
                         </div>
                     </el-upload>
                 </el-col>
             </el-row>
             <el-row>
                 <el-col>
-                    <el-button @click="autoEquipStart">开始换装</el-button>
+                    <el-text style="line-height: 32px;">选择配装器导出的yyyy-mm-dd-export.json文件</el-text>
+                    <img style="width: 100%;" src="../assets/stepImage.png" alt="logo" />
                 </el-col>
             </el-row>
         </el-col>
         <el-col :span="12" style="padding-left: 10px;">
             <el-row>
                 <el-col>
-                    <el-table :data="heroList" stripe style="width: 100%;" height="380">
-                        <el-table-column prop="name" label="英雄" />
+                    <el-button @click="autoEquipStart">开始换装</el-button><el-text type="danger"> 开发中</el-text>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col>
+                    <el-table :data="heroList" stripe style="width: 100%;" height="340">
+                        <el-table-column prop="name" label="英雄列表" />
                     </el-table>
                 </el-col>
             </el-row>
@@ -121,10 +127,11 @@ onMounted(() => {
 
 })
 </script>
-  
+    
 <style>
-.upload-geer {
-    min-height: 217px;
+.el-upload {
+    --el-upload-dragger-padding-horizontal: 10px;
+    --el-upload-dragger-padding-vertical: 10px;
 }
 </style>
        
