@@ -38,4 +38,8 @@ const menuStore = useMenuStore()
 .toolbox-footer {
   line-height: 60px;
 }
+
+body {
+  overflow: hidden;
+}
 </style>
