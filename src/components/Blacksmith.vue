@@ -26,17 +26,42 @@
                     {{ item[1] }}
                 </el-descriptions-item>
                 <el-descriptions-item label="套装">{{ set }}</el-descriptions-item>
-                <el-descriptions-item label="分数">{{ score }}</el-descriptions-item>
-                <el-descriptions-item label="预期分数">{{ expectantScore }}</el-descriptions-item>
             </el-descriptions>
         </el-col>
         <el-col :span="14">
             <el-row v-if="enhancedRecommendation">
                 <el-col>
+                    <el-text class="mx-1" size="large">当前分数：</el-text>
+                    <el-text class="mx-1" size="large">{{ score }}</el-text>
+                </el-col>
+                <el-col :span="12">
+                    <el-text class="mx-1" size="large">重铸前：预期分数：</el-text>
+                    <el-text class="mx-1" size="large">{{ expectantScore }}</el-text>
+                </el-col>
+                <el-col :span="12">
+                    <el-text class="mx-1" size="large">最高分数：</el-text>
+                    <el-text class="mx-1" size="large">{{ expectantMaxScore }}</el-text>
+                </el-col>
+                <el-col :span="12">
+                    <el-text class="mx-1" size="large">重铸后：预期分数：</el-text>
+                    <el-text class="mx-1" size="large">{{ (expectantScore + 12).toFixed(2) }}</el-text>
+                </el-col>
+                <el-col :span="12">
+                    <el-text class="mx-1" size="large">最高分数：</el-text>
+                    <el-text class="mx-1" size="large">{{ (expectantMaxScore + 12).toFixed(2) }}</el-text>
+                </el-col>
+                <el-col>
                     <el-text class="mx-1" size="large">强化建议：</el-text>
                     <el-text class="mx-1" size="large">{{ enhancedRecommendation }}</el-text>
                 </el-col>
-                <el-col style="margin-top: 10px; margin-bottom: 10px;">
+                <el-col style="margin-top: 5px;">
+                    <el-tag style="margin-right: 5px;" size="large" effect="dark" :type="recommendAbandon ? 'danger' : 'info'">放弃</el-tag>
+                    <el-tag style="margin-right: 5px;" size="large" effect="dark" :type="recommendHighScore ? 'success' : 'info'">高分</el-tag>
+                    <el-tag style="margin-right: 5px;" size="large" effect="dark" :type="recommendHighSpeed ? 'success' : 'info'">高速</el-tag>
+                    <el-tag style="margin-right: 5px;" size="large" effect="dark" :type="warningPrimaryAttributeFixed ? 'warning' : 'info'">固定</el-tag>
+                    <el-tag style="margin-right: 5px;" size="large" effect="dark" :type="warningBothEffAndRes ? 'warning' : 'info'">双效</el-tag>
+                </el-col>
+                <el-col style="margin-top: 5px; margin-bottom: 10px;">
                     <el-text class="mx-1" size="large">可用英雄：</el-text>
                 </el-col>
                 <el-col>
@@ -106,6 +131,12 @@ const attribute = ref<[string, string][]>([["", ""], ["", ""], ["", ""], ["", ""
 const score = ref(0)
 const enhancedRecommendation = ref('')
 const expectantScore = ref(0)
+const expectantMaxScore = ref(0)
+const recommendAbandon = ref(false)
+const recommendHighScore = ref(false)
+const recommendHighSpeed = ref(false)
+const warningPrimaryAttributeFixed = ref(false) // 警告主属性固定
+const warningBothEffAndRes = ref(false) // 警告同时具有双效
 const set = ref('')
 const uiIndex = ref('1')
 const autoSwich = ref(true)
@@ -253,8 +284,9 @@ child.stdout.on('data', (data: Buffer) => {
                 //计算分数
                 score.value = calculateScore(attribute.value)
                 //装备推荐
-                enhancedRecommendation.value = calculateAnalysis()
+                calculateAnalysis()
                 expectantScore.value = parseFloat((expectant() + score.value).toFixed(2))
+                expectantMaxScore.value = parseFloat((calculateMaxScore() + score.value).toFixed(2))
 
                 ipcRenderer.send('query-database', translateSetName(set.value))
             } else {
@@ -512,59 +544,62 @@ const calculateScore = (attribute: [string, string][]): number => {
 }
 
 const calculateAnalysis = () => {
+    enhancedRecommendation.value = '' 
+    recommendHighScore.value = false
+    recommendHighSpeed.value = false
+    recommendAbandon.value = false
+    warningPrimaryAttributeFixed.value = false
+    warningBothEffAndRes.value = false
+
     const leftScore = tiezhuConfig.value.scoreThreshold.left
     const rightScore = tiezhuConfig.value.scoreThreshold.right
 
-    if (["武器", "铠甲", "头盔"].includes(part.value)) {
-        if (enhancementLevel.value < 3 && score.value >= leftScore) return "继续强化"
-        else if (enhancementLevel.value < 6 && score.value >= leftScore + 6) return "继续强化"
-        else if (enhancementLevel.value < 9 && score.value >= leftScore + 12) return "继续强化"
-        else if (enhancementLevel.value < 12 && score.value >= leftScore + 18) return "继续强化"
-        else if (enhancementLevel.value < 15 && score.value >= leftScore + 24) return "继续强化"
-        else if (enhancementLevel.value == 15 && score.value >= leftScore + 30) return "建议重铸"
-        else {
-            let speed = 0
-            for (let [name, value] of attribute.value) {
-                if (name == "速度") {
-                    speed = parseInt(value)
-                }
-            }
-            if (enhancementLevel.value < 3 && speed >= 3) return "继续赌速度"
-            else if (enhancementLevel.value < 6 && speed >= 6) return "继续赌速度"
-            else if (enhancementLevel.value < 9 && speed >= 9) return "继续赌速度"
-            else if (enhancementLevel.value < 12 && speed >= 12) return "继续赌速度"
-            else if (enhancementLevel.value < 15 && speed >= 12) return "继续赌速度"
-            else if (enhancementLevel.value == 15 && speed >= 15) return "建议重铸"
-            else return "分数过低，建议放弃"
+    if (["项链", "戒指", "鞋子"].includes(part.value)
+        && ["攻击力", "防御力", "生命值"].includes(primaryAttribute.value[0]) 
+        && !primaryAttribute.value[1].includes('%')) {
+        enhancedRecommendation.value = "固定值主属性，建议放弃"
+        warningPrimaryAttributeFixed.value = true
+        recommendAbandon.value = true
+        return
+    }
+
+    let speed = 0
+    let hasEff = false // 判断是否包含效果命中
+    let hasRes = false // 判断是否包含效果抗性
+    for (let [name, value] of attribute.value) {
+        if (name == "速度") {
+            speed = parseInt(value)
+        } else if (name == "效果命中") {
+            hasEff = true
+        } else if (name == "效果抗性") {
+            hasRes = true
         }
+    }
+    if (enhancementLevel.value < 3 && speed >= 3) recommendHighSpeed.value = true
+    else if (enhancementLevel.value < 6 && speed >= 6) recommendHighSpeed.value = true
+    else if (enhancementLevel.value < 9 && speed >= 9) recommendHighSpeed.value = true
+    else if (enhancementLevel.value < 12 && speed >= 12) recommendHighSpeed.value = true
+    else if (enhancementLevel.value < 15 && speed >= 12) recommendHighSpeed.value = true
+    else if (enhancementLevel.value == 15 && speed >= 15) recommendHighSpeed.value = true
+    
+    if (enhancementLevel.value < 3 && score.value >= leftScore) recommendHighScore.value = true
+    else if (enhancementLevel.value < 6 && score.value >= leftScore + 6) recommendHighScore.value = true
+    else if (enhancementLevel.value < 9 && score.value >= leftScore + 12) recommendHighScore.value = true
+    else if (enhancementLevel.value < 12 && score.value >= leftScore + 18) recommendHighScore.value = true
+    else if (enhancementLevel.value < 15 && score.value >= leftScore + 24) recommendHighScore.value = true
+    else if (enhancementLevel.value == 15 && score.value >= leftScore + 30) recommendHighScore.value = true
+
+    if(hasEff && hasRes) warningBothEffAndRes.value = true
+
+    if (recommendHighScore.value == true) {
+        if (enhancementLevel.value < 15) enhancedRecommendation.value = "继续强化"
+        else enhancedRecommendation.value = "继续重铸"
+    } else if (recommendHighSpeed.value == true) {
+        if (enhancementLevel.value < 15) enhancedRecommendation.value = "继续赌速度"
+        else enhancedRecommendation.value = "继续重铸"
     } else {
-        if (["攻击力", "防御力", "生命值"].includes(primaryAttribute.value[0]) && !primaryAttribute.value[1].includes('%')) {
-            return "固定值主属性，建议放弃"
-        }
-        else {
-            if (enhancementLevel.value < 3 && score.value >= rightScore) return "继续强化"
-            else if (enhancementLevel.value < 6 && score.value >= rightScore + 6) return "继续强化"
-            else if (enhancementLevel.value < 9 && score.value >= rightScore + 12) return "继续强化"
-            else if (enhancementLevel.value < 12 && score.value >= rightScore + 18) return "继续强化"
-            else if (enhancementLevel.value < 15 && score.value >= rightScore + 24) return "继续强化"
-            else if (enhancementLevel.value == 15 && score.value >= rightScore + 30) return "建议重铸"
-            if (["项链", "戒指"].includes(part.value)) {
-                let speed = 0
-                for (let [name, value] of attribute.value) {
-                    if (name == "速度") {
-                        speed = parseInt(value)
-                    }
-                }
-                if (enhancementLevel.value < 3 && speed >= 3) return "继续赌速度"
-                else if (enhancementLevel.value < 6 && speed >= 6) return "继续赌速度"
-                else if (enhancementLevel.value < 9 && speed >= 9) return "继续赌速度"
-                else if (enhancementLevel.value < 12 && speed >= 12) return "继续赌速度"
-                else if (enhancementLevel.value < 15 && speed >= 12) return "继续赌速度"
-                else if (enhancementLevel.value == 15 && speed >= 15) return "建议重铸"
-                else return "分数过低，建议放弃"
-            }
-            else return "分数过低，建议放弃"
-        }
+        recommendAbandon.value = true
+        enhancedRecommendation.value = "分数过低，建议放弃"
     }
 }
 
@@ -614,6 +649,11 @@ const expectant = (): number => {
     }
     return expectant / 4 * Math.floor((17 - enhancementLevel.value) / 3)
 }
+
+const calculateMaxScore = (): number => {
+    return 8 * Math.floor((17 - enhancementLevel.value) / 3)
+}
+
 
 onUnmounted(() => {
     //停止监听
