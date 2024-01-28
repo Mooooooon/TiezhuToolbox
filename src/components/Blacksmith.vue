@@ -12,7 +12,7 @@
                     </el-radio-group>
                 </el-col>
                 <el-col :span="8">
-                    <el-switch v-model="autoSwich" inline-prompt active-text="自动切换" inactive-text="关闭自动" />
+                    <!--el-switch v-model="autoSwich" inline-prompt active-text="自动切换" inactive-text="关闭自动" /-->
                 </el-col>
             </el-row>
             <el-descriptions v-if="enhancedRecommendation" class="gear-info" title="装备信息" :column="1">
@@ -109,6 +109,7 @@ const expectantScore = ref(0)
 const set = ref('')
 const uiIndex = ref('1')
 const autoSwich = ref(true)
+const fromBag = ref(false)
 let configData = require(path.join(process.cwd(), 'tiezhu.config.json'))
 let tiezhuConfig = ref(configData)
 interface HeroAttribute {
@@ -205,6 +206,9 @@ child.stdout.on('data', (data: Buffer) => {
                             type: 'error',
                         })
                         console.log("数据可能不正确，请确认图片内容")
+                    } else {
+                        // 轉換另一個測試
+                        fromBag.value = !fromBag.value
                     }
                     return
                 }
@@ -224,6 +228,8 @@ child.stdout.on('data', (data: Buffer) => {
                 //是否自动切换
                 const isPart = ["项链", "戒指", "鞋子", "武器", "头盔", "铠甲"].includes(part.value)
                 if (autoSwich.value === true && !isPart) {
+                    // 轉換另一個測試
+                    fromBag.value = !fromBag.value
                     return
                 }
                 //获取主属性
@@ -356,19 +362,6 @@ const recommendGear = (heros: { data: any[] }) => {
     topHeroes.value = filteredHeroes.sort((a, b) => b.matchDegree - a.matchDegree)
 }
 
-
-
-
-
-// 监听退出事件
-child.on('close', () => {
-    console.log('子进程退出')
-})
-// 因为这个工具的作者把info输出在了stderr，所以不要做错误处理
-// child.stderr.on('data', (data) => {
-//     console.error(`子进程错误输出：${data}`)
-// })
-
 //截图
 const takeScreenshot = () => {
     if (adbStore.status === 0) {
@@ -413,6 +406,18 @@ const takeScreenshot = () => {
     }
 }
 
+let timer = setInterval(takeScreenshot, 2000)
+
+// 监听退出事件
+child.on('close', () => {
+    clearInterval(timer)
+    console.log('子进程退出')
+})
+// 因为这个工具的作者把info输出在了stderr，所以不要做错误处理
+// child.stderr.on('data', (data) => {
+//     console.error(`子进程错误输出：${data}`)
+// })
+
 //Ocr识别
 const textOcr = async (imagePath: string): Promise<any> => {
     // 准备待发送的指令
@@ -426,7 +431,7 @@ const getGearInfo = async () => {
     const processedImagePath = path.join('temp', 'gear_info.png') // 使用 path.join 拼接路径
 
     //判断ui位置
-    if (uiIndex.value === '1' || autoSwich.value === true) {
+    if (uiIndex.value === '1' || (autoSwich.value === true && fromBag.value === false)) {
         const cropOptions = { left: 35, top: 102, width: 435, height: 500 }
         const blackOverlay = Buffer.from(
             `<svg width="435" height="500">
@@ -446,7 +451,7 @@ const getGearInfo = async () => {
             .toFile(processedImagePath)
         await textOcr(processedImagePath)
     }
-    if (uiIndex.value === '2' || autoSwich.value === true) {
+    if (uiIndex.value === '2' || (autoSwich.value === true && fromBag.value === true)) {
         const cropOptions = { left: 415, top: 137, width: 370, height: 550 }
         const blackOverlay = Buffer.from(
             `<svg width="370" height="550">
